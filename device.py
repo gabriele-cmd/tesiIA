@@ -20,7 +20,7 @@ def get_device(gpu_id: int = 0, verbose: bool = True) -> torch.device:
     else:
         device = torch.device("cpu")
         if verbose:
-            n_threads = torch.get_num_threads ()
+            n_threads = torch.get_num_threads()
             print(f"Device selezionato: CPU ({n_threads} thread)")
             print("  → Per usare la GPU: installa PyTorch con supporto CUDA")
             print("    https://pytorch.org/get-started/locally/")
