@@ -91,7 +91,7 @@ class LinearKernel(BaseKernel):
     #Utile per capire se le differenze tra reale e generato sono catturabili linearmente
 
     def _compute(self , x: Tensor, y: Tensor) -> Tensor:
-        return torch.mm(x, y) #funzione lineare
+        return torch.mm(x, y.T) #funzione lineare
 
     def __repr__(self) -> str:
         return "LinearKernel()"
