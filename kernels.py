@@ -40,7 +40,7 @@ class BaseKernel(ABC):
         #Usare (x - y)² richiederebbe una matrice [n,m,d] troppo dispendiosa
 
         x_sq = (x*x).sum(dim=1, keepdim=True) # [n, 1] , ‖xᵢ‖²
-        y_sq = (y*y).sum(dim=1, keepdim=True) # [1, m] , ‖yⱼ‖²
+        y_sq = (y*y).sum(dim=1, keepdim=True).T # [1, m] , ‖yⱼ‖²
         xy = torch.mm(x, y.T) # [n, m] , ⟨xᵢ, yⱼ⟩
 
         return torch.clamp(x_sq + y_sq - 2 * xy, min=0.0) #clamp(min=0.0) evita valori negativi minuscoli dovuti all'arrotondamento del floating point
