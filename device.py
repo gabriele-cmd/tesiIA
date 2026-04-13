@@ -49,7 +49,7 @@ def device_info(device: torch.device) -> dict:
         info["memory_gb"]    = round(props.total_memory / 1e9, 2)
         info["cuda_version"] = torch.version.cuda
         info["n_cores"]      = props.multi_processor_count
-    elif device.type == "mps":
+    elif device.type == "mps": 
         info["name"] = "Apple Silicon GPU"
     else:
         info["name"]     = "CPU"
