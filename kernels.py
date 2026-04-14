@@ -1,3 +1,5 @@
+#calcola la matrice di similarità tra campioni
+
 from abc import ABC, abstractmethod
 import torch
 from torch import Tensor

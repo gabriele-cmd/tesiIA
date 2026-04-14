@@ -4,6 +4,8 @@ silverman_bandwidth() - alternativa teorica utile per confronti
 bandwidth_grid() - griglia per esperimenti di sensitività
 """
 
+#calcola il parametro di banda corretto σ
+
 import warnings
 import torch
 from torch import Tensor
