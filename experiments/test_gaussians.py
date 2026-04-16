@@ -1,5 +1,8 @@
 """
-ESECUZIONE: python experiments/test_gaussians.py
+ESECUZIONE:
+    python experiments/test_gaussians.py per test di DEFAULT
+    python experiments/test_gaussians.py --n 2000 --d 128 --n_perm 1000 --trials 100 per test VARIABILE (valori di esempio)
+    USARE python3 SU MACCHINA REMOTA
 
 Test di robustezza del codice MMD svolto su dataset sintetici derivati da miscele gaussiane
 
@@ -13,6 +16,7 @@ Per la miscela gaussiana si sfrutta la foruma della distribuzione:
 """
 
 import time #utile per avere una misura del tempo di esecuzione necessario
+import argparse #utile per ricevere il dataset dinamicamente in input
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
@@ -236,23 +240,47 @@ def experiment_3_power(device: torch.device, n: int = 150, d: int = 32, n_perm_p
 
 #Esecuzione esperimenti
 if __name__ == "__main__":
+    #Valori dataset fisso (DEFAULT)
+    args_n = 150
+    args_d = 32
+    args_n_perm = 300
+    args_trials = 50
+
+    #COMMENTARE QUESTA SEZIONE PER TOGLIERE LA POSSIBILITA DI INPUT
+    parser = argparse.ArgumentParser(description="Test MMD su miscele gaussiane")
+    parser.add_argument("--n",       type=int, default=150,
+                        help="numero di campioni per gruppo (default: 150)")
+    parser.add_argument("--d",       type=int, default=32,
+                        help="dimensioni delle feature (default: 32)")
+    parser.add_argument("--n_perm",  type=int, default=300,
+                        help="permutazioni bootstrap (default: 300)")
+    parser.add_argument("--trials",  type=int, default=50,
+                        help="trial per esperimento 3 (default: 50)")
+    args = parser.parse_args()
+    #COMMENTARE QUESTA SEZIONE PER TOGLIERE LA POSSIBILITA DI INPUT
+
+    print("="*57)
     print("Test di robustezza MMD su miscele gaussiane")
-    print("Tutti gli esperimenti girano su CPU — nessuna GPU necessaria\n")
+    print(f"  n={args.n}, d={args.d}, n_perm={args.n_perm}, trials={args.trials}")
+    print("="*57)
 
     device = get_device()
 
+    import time
+
     t0 = time.time()
-    experiment_1_separation(device)
+    experiment_1_separation(device, n=args.n, d=args.d, n_perm=args.n_perm)
     print(f"  Tempo: {time.time()-t0:.1f}s")
 
-    t1 = time.time()
-    experiment_2_overlap(device)
-    print(f"  Tempo: {t1-t0:.1f}s")
+    t0 = time.time()
+    experiment_2_overlap(device, n=args.n, d=args.d, n_perm=args.n_perm)
+    print(f"  Tempo: {time.time()-t0:.1f}s")
 
-    t2 = time.time()
-    experiment_3_power(device, n_perm_per_trial=300)
-    print(f"  Tempo: {time.time() - t0:.1f}s")
+    t0 = time.time()
+    experiment_3_power(device, n=args.n, d=args.d,
+                       n_perm=args.n_perm, n_trials=args.trials)
+    print(f"  Tempo: {time.time()-t0:.1f}s")
 
-    print("\n" + "=" * 55)
+    print("\n" + "="*57)
     print("Tutti gli esperimenti completati.")
-    print("=" * 55)
+    print("="*57)
