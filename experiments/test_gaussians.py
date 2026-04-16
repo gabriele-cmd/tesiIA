@@ -12,6 +12,7 @@ Per la miscela gaussiana si sfrutta la foruma della distribuzione:
         P = 0.5 · N(μ₁, σ²I) + 0.5 · N(μ₂, σ²I)
 """
 
+import time #utile per avere una misura del tempo di esecuzione necessario
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
@@ -239,9 +240,18 @@ if __name__ == "__main__":
     print("Tutti gli esperimenti girano su CPU — nessuna GPU necessaria\n")
 
     device = get_device()
+
+    t0 = time.time()
     experiment_1_separation(device)
+    print(f"  Tempo: {time.time()-t0:.1f}s")
+
+    t1 = time.time()
     experiment_2_overlap(device)
+    print(f"  Tempo: {t1-t0:.1f}s")
+
+    t2 = time.time()
     experiment_3_power(device, n_perm_per_trial=300)
+    print(f"  Tempo: {time.time() - t0:.1f}s")
 
     print("\n" + "=" * 55)
     print("Tutti gli esperimenti completati.")
