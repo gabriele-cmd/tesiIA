@@ -167,7 +167,7 @@ def experiment_2_overlap(device: torch.device, n: int = 150, d: int = 32):
 #Esperimento 3: potenza del test (probabilità di rifiutare H0 quando questa è falsa)
 #con quanta affidabilità il test rileva differenze reali?
 #determina P(rifiutare H0 | H0 falsa)
-def experiment_3_power(device: torch.device, n: int = 150, d: int = 32):
+def experiment_3_power(device: torch.device, n: int = 150, d: int = 32, n_perm_per_trial: int = 300):
     """
     Idealmente P = 1.0 ma realmente dipende da:
         - n (numero campioni proporzionale alla potenza)
@@ -185,7 +185,7 @@ def experiment_3_power(device: torch.device, n: int = 150, d: int = 32):
     """
     print("\n" + "=" * 55)
     print("ESPERIMENTO 3 — Potenza del test")
-    print(f"  n={n} campioni, d={d} dim, n_trials=50, n_perm=300")
+    print(f"  n={n} campioni, d={d} dim, n_trials=50, n_perm={n_perm_per_trial}")
     print("=" * 55)
     print(f"  {'shift':>8}  {'potenza':>10}  {'rifiuti/50':>12}  "
           f"{'MMD² medio':>12}")
@@ -203,11 +203,11 @@ def experiment_3_power(device: torch.device, n: int = 150, d: int = 32):
             mu_p = torch.zeros(d)
             mu_q = torch.zeros(d); mu_q[0] = shift
 
-            X = make_gaussian_mixture(n, d, means=[mu_p], seed=trial)
-            Y = make_gaussian_mixture(n, d, means=[mu_q], seed=trial + 1000)
+            X = make_gaussian_mixture(n, d, means=[mu_p], seed=trial + 200)
+            Y = make_gaussian_mixture(n, d, means=[mu_q], seed=trial + 300)
             X, Y = move_to_device(X, Y, device=device)
 
-            result = bootstrap_test(X, Y, n_perm=500, device=device, seed=trial)
+            result = bootstrap_test(X, Y, n_perm=n_perm_per_trial, device=device, seed=trial)
 
             if result.reject_h0:
                 rejections += 1
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     device = get_device()
     experiment_1_separation(device)
     experiment_2_overlap(device)
-    experiment_3_power(device)
+    experiment_3_power(device, n_perm_per_trial=500)
 
     print("\n" + "=" * 55)
     print("Tutti gli esperimenti completati.")
