@@ -26,7 +26,7 @@ def make_gaussian_mixture(
         means: list[Tensor] | None = None, #lista di Tensor [d] (centri dei componenti) se None le componenti sono equidistanti a distanza 1.0
         std: float = 1.0, #deviazione standard dei componenti
         n_components: int = 2, #numero di componenti della miscela
-        seed: int | None = None, #utile per riproducibilità
+        seed: int | None = None, #utile per riproducibilità, rimane costante
 ) -> Tensor:
 
     if seed is not None:
