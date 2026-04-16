@@ -59,7 +59,7 @@ def make_gaussian_mixture(
 
 #Esperimento 1: Separazione crescente
 #L'MMD cresce con la distanza tra le distribuzioni riuscendo a rilevare la diversità tra di esse?
-def experiment_1_separation(device: torch.device, n: int = 150, d: int = 32):
+def experiment_1_separation(device: torch.device, n: int = 150, d: int = 32, n_perm: int = 500):
     """
     Setup:
         P = N(0, I) - distribuzione REALE
@@ -114,7 +114,7 @@ def experiment_1_separation(device: torch.device, n: int = 150, d: int = 32):
 
 #Esperimento 2: Miscele gaussiane con overlap variabile
 #L'MMD funziona anche con distribuzioni multimodali e riesce a catturare differenze con overlap parziale?
-def experiment_2_overlap(device: torch.device, n: int = 150, d: int = 32):
+def experiment_2_overlap(device: torch.device, n: int = 150, d: int = 32, n_perm: int = 500):
     """
     Setup:
         P = 0.5·N(-1, I) + 0.5·N(+1, I)    — miscela fissa
@@ -172,7 +172,7 @@ def experiment_2_overlap(device: torch.device, n: int = 150, d: int = 32):
 #Esperimento 3: potenza del test (probabilità di rifiutare H0 quando questa è falsa)
 #con quanta affidabilità il test rileva differenze reali?
 #determina P(rifiutare H0 | H0 falsa)
-def experiment_3_power(device: torch.device, n: int = 150, d: int = 32, n_perm_per_trial: int = 300):
+def experiment_3_power(device: torch.device, n: int = 150, d: int = 32, n_perm: int = 300, n_trials: int = 50):
     """
     Idealmente P = 1.0 ma realmente dipende da:
         - n (numero campioni proporzionale alla potenza)
@@ -190,14 +190,13 @@ def experiment_3_power(device: torch.device, n: int = 150, d: int = 32, n_perm_p
     """
     print("\n" + "=" * 55)
     print("ESPERIMENTO 3 — Potenza del test")
-    print(f"  n={n} campioni, d={d} dim, n_trials=50, n_perm={n_perm_per_trial}")
+    print(f"  n={n} campioni, d={d} dim, n_trials={n_trials}, n_perm={n_perm}")
     print("=" * 55)
     print(f"  {'shift':>8}  {'potenza':>10}  {'rifiuti/50':>12}  "
           f"{'MMD² medio':>12}")
     print("  " + "-" * 48)
 
     shifts = [0.0, 0.5, 1.0, 1.5, 2.0, 3.0]
-    n_trials = 50
     powers = []
 
     for shift in shifts:
@@ -212,7 +211,7 @@ def experiment_3_power(device: torch.device, n: int = 150, d: int = 32, n_perm_p
             Y = make_gaussian_mixture(n, d, means=[mu_q], seed=trial + 300)
             X, Y = move_to_device(X, Y, device=device)
 
-            result = bootstrap_test(X, Y, n_perm=n_perm_per_trial, device=device, seed=trial)
+            result = bootstrap_test(X, Y, n_perm=n_perm, device=device, seed=trial)
 
             if result.reject_h0:
                 rejections += 1
