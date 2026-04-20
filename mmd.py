@@ -1,5 +1,8 @@
 #calcolo MMD e test statistico
 #riferimento a Gretton "Kernel Two-Sample Test" (2012)
+#sfrutta la formula MMD²(P, Q) = E[k(x,x')] + E[k(y,y')] − 2·E[k(x,y)]
+#con tre termini: similarità interna di P (reali), di Q (generati) e similarità media tra P e Q
+#se P=Q il terzo termine annulla gli altri due e MMD=0 (distanza 0 -> distribuzioni uguali)
 
 from dataclasses import dataclass
 import torch
