@@ -47,6 +47,7 @@ class BaseKernel(ABC):
 
         return torch.clamp(x_sq + y_sq - 2 * xy, min=0.0) #clamp(min=0.0) evita valori negativi minuscoli dovuti all'arrotondamento del floating point
 
+#Kernel Gaussiano ottimo poiché universale (MMD(P, Q) = 0  ⟺  P = Q)
 class GaussianKernel(BaseKernel):
     #Sfrutta k(x, y) = exp( -‖x - y‖² / (2σ²) )
     #vale idealmente 1 quando x = y e si avvicina a 0 quando x e y si discostano
@@ -100,7 +101,7 @@ class LinearKernel(BaseKernel):
 
 class MultiScaleGaussianKernel(BaseKernel):
     #Sfrutta k(x, y) = (1/S) Σₛ exp( -‖x - y‖² / (2σₛ²) ) e fa la media di S kernel Gaussiani con bandwith diversi
-    #Metriche diverse catturano strutture locali o globali su scale diverse tra loro (vedi paper di Gretton)
+    #Metriche diverse catturano strutture locali o globali su scale diverse tra loro
 
     def __init__(self, sigmas: list[float] | None = None):
         if sigmas is None:
