@@ -391,6 +391,9 @@ def plot_results(
     ax.set_title(f"Sintetico\n(r = {corr_synth:.3f})")
     ax.legend()
     ax.grid(True, alpha=0.3)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(0.1))
+    ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
+    ax.tick_params(axis='x', rotation=45)
 
     #Grafico 2 - EM
     ax = axes[1]
@@ -404,6 +407,9 @@ def plot_results(
     ax.set_title(f"EM (realistico)\n(r = {corr_em:.3f})")
     ax.legend()
     ax.grid(True, alpha=0.3)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(0.1))
+    ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
+    ax.tick_params(axis='x', rotation=45)
 
     #Grafico 3 - Confronto
     ax = axes[2]
@@ -414,6 +420,9 @@ def plot_results(
     ax.set_title("Confronto")
     ax.legend()
     ax.grid(True, alpha=0.3)
+    ax.xaxis.set_major_locator(plt.MultipleLocator(0.1))
+    ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
+    ax.tick_params(axis='x', rotation=45)
 
     plt.tight_layout()
     path = os.path.join(output_dir, f"mmd_vs_overlap_{dataset_name}.png")
