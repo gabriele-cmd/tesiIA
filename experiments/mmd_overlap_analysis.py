@@ -11,7 +11,7 @@ ANALISI EMPIRICA DELLA RELAZIONE TRA MMD E OVERLAP AREA
 """
 
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import numpy as np
@@ -323,7 +323,7 @@ def experiment_em(
         gmm_q.means_[:,0] += shift #spostata lungo il primo asse
         gmm_q.covariances_ = gmm.covariances_.copy()
         gmm_q.weights_ = gmm.weights_.copy()
-        gmm_q.precisio_chol_ = gmm_q.precisio_chol_.copy()
+        gmm_q.precisions_cholesky_ = gmm.precisions_cholesky_.copy()
 
         Y_np, _ = gmm_q.sample(n_points)
         Y_np = Y_np.astype(np.float32)
@@ -458,10 +458,8 @@ if __name__ == "__main__":
 
     mmd2_em, oa_em = experiment_em(
         device,
-        d = args.d,
         n_points = args.n_points,
         n_samples_oa = args.n_samples,
-        n_shifts = args.n_shifts,
         n_configs = args.n_configs,
         dataset_name = args.dataset,
     )
