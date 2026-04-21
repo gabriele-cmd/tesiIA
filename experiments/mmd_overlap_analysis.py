@@ -284,7 +284,7 @@ def experiment_em(
     #3. Fitta GMM con EM
     print(f" Fitting GMM with EM...")
     gmm = GaussianMixture(
-        n_components = 2,
+        n_components = args.n_components,
         covariance_type = 'diag',
         random_state = 0,
         n_init = 10, #per essere sicuri di trovare il minimo globale
@@ -316,7 +316,7 @@ def experiment_em(
 
         #Q: campiona dalla GMM con medie shiftate, costruita manualmente
         gmm_q = GaussianMixture(
-            n_components = 2,
+            n_components = args.n_components,
             covariance_type = 'diag',
         )
         gmm_q.means_ = gmm.means_.copy()
@@ -372,7 +372,7 @@ def plot_results(
     os.makedirs(output_dir, exist_ok=True)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    fig.suptitle("Relazione empirica tra MMD² e Overlap Area", fontsize=13)
+    fig.suptitle(f"Relazione empirica tra MMD² e Overlap Area - Dataset: {dataset_name}", fontsize=13)
 
     #Calcola le correlazioni
     corr_synth = np.corrcoef(oa_synth, mmd2_synth)[0, 1]
@@ -444,6 +444,8 @@ if __name__ == "__main__":
                         help="cartella output grafici")
     parser.add_argument("--dataset", type=str, default="iris",
                         help="dataset reale: 'iris', 'wine', 'cancer'")
+    parser.add_argument("--n_components", type=int, default=2,
+                        help="componenti GMM (default: 2)")
 
     args = parser.parse_args()
     device = get_device()
