@@ -286,7 +286,7 @@ def experiment_em(
     #2. Normalizza le feature
     #StandardScaler porta ogni feature al default media=0 e std=1, utile per confronto tra dataset con scale diverse
     scaler = StandardScaler()
-    data = scaler.fit_transform(data_raw.data).astype(np.float32)
+    data = scaler.fit_transform(data_raw.data).astype(np.float64)
     d = data.shape[1]
     print(f" Dimensioni dopo normalizzazione: {data.shape}")
 
@@ -298,6 +298,7 @@ def experiment_em(
         random_state = 0,
         n_init = 10, #per essere sicuri di trovare il minimo globale
         max_iter = 300,
+        reg_covar = 1e-4,
     )
     gmm.fit(data)
 
