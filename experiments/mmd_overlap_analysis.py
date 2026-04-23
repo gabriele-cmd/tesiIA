@@ -272,6 +272,10 @@ def experiment_em(
         from sklearn.datasets import fetch_california_housing
         data_raw = fetch_california_housing()
         dataset_label = "California Housing (8 feature, 20640 campioni)"
+    elif dataset_name == 'covertype':
+        from sklearn.datasets import fetch_covtype
+        data_raw = fetch_covtype()
+        dataset_label = "Covertype (54 feature, 581012 campioni)"
 
     else:
         raise ValueError(f"Dataset non riconosciuto: {dataset_name}. "
