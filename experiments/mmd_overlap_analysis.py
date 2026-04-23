@@ -399,6 +399,13 @@ def plot_results(
     ax.set_ylabel("MMD²")
     ax.set_title(f"Sintetico\n(r = {corr_synth:.3f})")
     ax.legend()
+
+    ax.text(0.05, 0.95, f"r = {corr_synth:.3f}",
+            transform=ax.transAxes,
+            fontsize=14, fontweight='bold',
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='steelblue', alpha=0.2))
+
     ax.grid(True, alpha=0.3)
     ax.xaxis.set_major_locator(plt.MultipleLocator(0.1))
     ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
@@ -415,6 +422,13 @@ def plot_results(
     ax.set_ylabel("MMD²")
     ax.set_title(f"EM (realistico)\n(r = {corr_em:.3f})")
     ax.legend()
+
+    ax.text(0.05, 0.95, f"r = {corr_em:.3f}",
+            transform=ax.transAxes,
+            fontsize=14, fontweight='bold',
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='darkorange', alpha=0.2))
+
     ax.grid(True, alpha=0.3)
     ax.xaxis.set_major_locator(plt.MultipleLocator(0.1))
     ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
@@ -428,6 +442,13 @@ def plot_results(
     ax.set_ylabel("MMD²")
     ax.set_title("Confronto")
     ax.legend()
+
+    ax.text(0.05, 0.95, f"r sintetico = {corr_synth:.3f}\nr EM = {corr_em:.3f}",
+            transform=ax.transAxes,
+            fontsize=12, fontweight='bold',
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
     ax.grid(True, alpha=0.3)
     ax.xaxis.set_major_locator(plt.MultipleLocator(0.1))
     ax.yaxis.set_major_locator(plt.MultipleLocator(0.05))
