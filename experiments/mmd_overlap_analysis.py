@@ -252,18 +252,27 @@ def experiment_em(
     from sklearn.preprocessing import StandardScaler
 
     #1. Carica il dataset reale
-    if dataset_name == 'iris':
+    if dataset_name == 'iris': #dataset misurazioni fisiche di Iris
         from sklearn.datasets import load_iris
         data_raw = load_iris()
         dataset_label = "Iris (4 feature, 150 campioni)"
-    elif dataset_name == 'wine':
+    elif dataset_name == 'wine': #dataset analisi chimiche di vini
         from sklearn.datasets import load_wine
         data_raw = load_wine()
         dataset_label = "Wine (13 feature, 178 campioni)"
-    elif dataset_name == 'cancer':
+    elif dataset_name == 'cancer': #dataset medico
         from sklearn.datasets import load_breast_cancer
         data_raw = load_breast_cancer()
         dataset_label = "Breast Cancer (30 feature, 569 campioni)"
+    elif dataset_name == 'digits': #dataset cifre scritte a mano
+        from sklearn.datasets import load_digits
+        data_raw = load_digits()
+        dataset_label = "Digits (64 feature, 1797 campioni)"
+    elif dataset_name == 'california': #dataset prezzi delle case in California
+        from sklearn.datasets import fetch_california_housing
+        data_raw = fetch_california_housing()
+        dataset_label = "California Housing (8 feature, 20640 campioni)"
+
     else:
         raise ValueError(f"Dataset non riconosciuto: {dataset_name}. "
                          f"Scegli tra 'iris', 'wine', 'cancer'.")
