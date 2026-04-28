@@ -252,7 +252,7 @@ def experiment_collapse(
             print(f"  {K:>8.3f}  {cd_mean:>10.3f}  {oa_mean:>8.4f}  "
                   f"{mmd2_mean:>10.6f}  {w_mean.round(3)}")
 
-        return results
+    return results
 
 #5. Grafici e Main
 def plot_collapse(results: dict, output_dir: str = "results") -> None:
