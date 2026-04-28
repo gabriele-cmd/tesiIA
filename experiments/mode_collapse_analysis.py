@@ -177,7 +177,7 @@ def experiment_collapse(
     #Valori di K da testare:
     #da K grande (nessun collapse) a K piccolo (collapse forte)
     #scala logaritmica perché l'effetto è moltiplicativo
-    K_values = np.logspace(2, -1, 30) #da 100 a 0.01
+    K_values = np.logspace(2, -1, 20) #da 100 a 0.01
 
     results = {
         'K_values': [],
