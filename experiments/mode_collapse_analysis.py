@@ -271,7 +271,7 @@ def plot_collapse(results: dict, output_dir: str = "results") -> None:
     ax = axes[0]
     ax2 = ax.twinx() #secondo asse Y per OA
     ax.plot(cd, mmd, 'o-', color='steelblue', linewidth=2,
-            marketsize=4, label='MMD²')
+            markersize=4, label='MMD²')
     ax2.plot(cd, oa, 's--', color='darkorange', linewidth=2,
              markersize=4, label='OA')
     ax.set_xlabel("Grado di collapse  (0=nessuno, 1=totale)")
