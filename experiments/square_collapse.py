@@ -218,6 +218,8 @@ def experiment_square_collapse(
     return results
 
 #5. Grafici e Main
+
+#GRAFICO ANDAMENTO COLLAPSE DEGREE
 def plot_square_collapse(results: dict, output_dir: str = "results") -> None:
     os.makedirs(output_dir, exist_ok=True)
 
@@ -270,6 +272,97 @@ def plot_square_collapse(results: dict, output_dir: str = "results") -> None:
     print(f"\n  Grafico salvato in: {path}")
     plt.close()
 
+#GRAFICO SCATTER 2D + KDE DISTANZE
+def plot_kde(results: dict, output_dir: str = "results", seed: int = 0) -> None:
+    """
+    Per 4 valori rappresentativi di K mostra:
+        - sinistra: scatter P (blu) e Q (colorato) nello spazio 2D
+        - destra:   KDE di D_PP, D_QQ, D_PQ con area overlap colorata
+    Identico allo stile del file di Eleonora.
+    """
+    from scipy.stats import gaussian_kde
+
+    os.makedirs(output_dir, exist_ok=True)
+    #Sceglie 4 valori di K rappresentativi
+    K_all = results['K_values']
+    #indici: primo (nessun collapse), due intermedi, ultimo (collapse forte)
+    indices = [0,
+               len(K_all) // 2,
+               len(K_all) -1,]
+    colors = ['#34d399', '#f472b6', '#f87171']
+    labels = ['Nessun collapse', 'Collapse parziale', 'Collapse forte']
+
+    fig, axes = plt.subplots(3, 2, figsize=(12, 12))
+    fig.suptitle(
+        "Mode Collapse sul Quadrato 2D\n"
+        "(Dirichlet, median heuristic σ)",
+        fontsize=12
+    )
+
+    P = sample_square(BASE_WEIGHTS, N_SAMPLES, seed=seed).astype(np.float32)
+
+    for row, (idx, color, label) in enumerate(zip(indices, colors, labels)):
+        K = K_all[idx]
+        cd = results['collapse_degree'][idx]
+        oa = results['oa'][idx]
+        mmd = results['mmd2'][idx]
+
+        #Campiona Q con pesi Dirichlet per questo K
+        w_q = sample_dirichlet_weights(BASE_WEIGHTS, K, seed=seed + idx)
+        Q = sample_square(w_q, N_SAMPLES,
+                          seed=seed + idx + 50000).astype(np.float32)
+
+        #Scatter 2D
+        ax = axes[row, 0]
+        ax.scatter(P[:, 0], P[:, 1], s=10, alpha=0.3,
+                   color='steelblue', label='P (reale)')
+        ax.scatter(Q[:, 0], Q[:, 1], s=10, alpha=0.5,
+                   color=color, label='Q (generata)')
+        ax.set_xlim(-8, 8)
+        ax.set_ylim(-8, 8)
+        ax.set_title(f"{label}  (K={K:.3f}, collapse={cd:.3f})")
+        ax.legend(markerscale=2)
+        ax.grid(True, alpha=0.2)
+
+        #KDE distanze
+        ax = axes[row, 1]
+
+        #Distanze intra-P
+        i_idx, j_idx = np.triu_indices(len(P), k=1)
+        d_pp = np.linalg.norm(P[i_idx] - P[j_idx], axis=1)
+
+        #Distanze intra-Q
+        i_idx, j_idx = np.triu_indices(len(Q), k=1)
+        d_qq = np.linalg.norm(Q[i_idx] - Q[j_idx], axis=1)
+
+        #Distanze inter P-Q (subsample per velocità)
+        rng = np.random.default_rng(seed + idx)
+        p_sub = P[rng.choice(len(P), min(200, len(P)), replace=False)]
+        q_sub = Q[rng.choice(len(Q), min(200, len(Q)), replace=False)]
+        d_pq = np.linalg.norm(
+            p_sub[:, None, :] - q_sub[None, :, :], axis=2
+        ).ravel()
+
+        grid = np.linspace(0, max(d_pp.max(), d_qq.max(), d_pq.max()), 500)
+
+        kde_pp = gaussian_kde(d_pp)(grid)
+        kde_qq = gaussian_kde(d_qq)(grid)
+        kde_pq = gaussian_kde(d_pq)(grid)
+
+        ax.plot(grid, kde_pp, label='D_PP', color='steelblue')
+        ax.plot(grid, kde_qq, label='D_QQ', color=color)
+        ax.plot(grid, kde_pq, label='D_PQ', color='gray', linestyle='--')
+        ax.fill_between(grid, np.minimum(kde_pp, kde_pq), alpha=0.2,
+                        color='steelblue')
+        ax.set_title(f"OA={oa:.3f}   |   MMD²={mmd:.4f}")
+        ax.legend()
+        ax.grid(True, alpha=0.2)
+
+    plt.tight_layout()
+    path = os.path.join(output_dir, "square_collapse_eleonora_style.png")
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    print(f"  Grafico scatter salvato in: {path}")
+    plt.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -294,6 +387,7 @@ if __name__ == "__main__":
     )
 
     plot_square_collapse(results, output_dir=args.output_dir)
+    plot_kde(results, output_dir=args.output_dir)
 
     corr = float(np.corrcoef(results['oa'], results['mmd2'])[0, 1])
     print(f"\n  r(OA, MMD²) = {corr:.4f}")
