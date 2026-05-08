@@ -146,7 +146,7 @@ def experiment_square_collapse(
     Calcola MMD e OA al variare del parametro K di Dirichlet
     sulla distribuzione a 4 gaussiane sul quadrato.
     """
-    K_values = np.logspace(2, 0, 15)
+    K_values = np.logspace(2, -1, 20)
 
     results = {
         'K_values': [],
