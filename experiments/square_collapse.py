@@ -220,7 +220,7 @@ def experiment_square_collapse(
 #5. Grafici e Main
 
 #GRAFICO ANDAMENTO COLLAPSE DEGREE
-def plot_square_collapse(results: dict, output_dir: str = "results") -> None:
+def plot_square_collapse(results: dict, output_dir: str = "results", n_trials: int = 100) -> None:
     os.makedirs(output_dir, exist_ok=True)
 
     cd  = results['collapse_degree']
@@ -231,7 +231,7 @@ def plot_square_collapse(results: dict, output_dir: str = "results") -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle(
         "Sensibilità di MMD² e OA al Mode Collapse\n"
-        "(Quadrato 2D, 4 gaussiane, Dirichlet)",
+        "(Quadrato 2D, 4 gaussiane, Dirichlet — n_trials={n_trials})",
         fontsize=12
     )
 
@@ -273,7 +273,7 @@ def plot_square_collapse(results: dict, output_dir: str = "results") -> None:
     plt.close()
 
 #GRAFICO SCATTER 2D + KDE DISTANZE
-def plot_kde(results: dict, output_dir: str = "results", seed: int = 0) -> None:
+def plot_kde(results: dict, output_dir: str = "results", seed: int = 0, n_trials: int = 100) -> None:
     """
     Per 4 valori rappresentativi di K mostra:
         - sinistra: scatter P (blu) e Q (colorato) nello spazio 2D
@@ -295,7 +295,7 @@ def plot_kde(results: dict, output_dir: str = "results", seed: int = 0) -> None:
     fig, axes = plt.subplots(3, 2, figsize=(12, 12))
     fig.suptitle(
         "Mode Collapse sul Quadrato 2D\n"
-        "(Dirichlet, median heuristic σ)",
+        "(Dirichlet, median heuristic σ — n_trials={n_trials})",
         fontsize=12
     )
 
