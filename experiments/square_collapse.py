@@ -231,7 +231,7 @@ def plot_square_collapse(results: dict, output_dir: str = "results", n_trials: i
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle(
         "Sensibilità di MMD² e OA al Mode Collapse\n"
-        "(Quadrato 2D, 4 gaussiane, Dirichlet — n_trials={n_trials})",
+        f"(Quadrato 2D, 4 gaussiane, Dirichlet — n_trials={n_trials})",
         fontsize=12
     )
 
@@ -295,7 +295,7 @@ def plot_kde(results: dict, output_dir: str = "results", seed: int = 0, n_trials
     fig, axes = plt.subplots(3, 2, figsize=(12, 12))
     fig.suptitle(
         "Mode Collapse sul Quadrato 2D\n"
-        "(Dirichlet, median heuristic σ — n_trials={n_trials})",
+        f"(Dirichlet, median heuristic σ — n_trials={n_trials})",
         fontsize=12
     )
 
