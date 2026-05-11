@@ -47,6 +47,6 @@ def overlap_area_kde(
     pq = kde_pq(grid)
 
     #OA = area sotto min(KDE_PP, KDE_PQ)
-    oa = float(np.trapz(np.minimum(pp, pq), grid))
+    oa = float(np.trapezoid(np.minimum(pp, pq), grid))
 
     return oa
