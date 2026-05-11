@@ -23,6 +23,7 @@ from sklearn.mixture import GaussianMixture
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
+from utils import overlap_area_kde
 
 #Funzioni di densità
 def gaussian_pdf(x: np.ndarray, mean: np.ndarray, std: float) -> np.ndarray:
@@ -85,28 +86,24 @@ def overlap_area_mc(
 
     #Campiona n_samples / 2 punti da P e n_samples / 2 da Q per formare campioni dalla miscela M = (P+Q)/2
     n_half = n_samples // 2
-    samples = []
 
     #Campiona da P
     counts_p = rng.multinomial(n_half, weights_p)
+    p_samples = []
     for mu, s, count in zip(means_p, stds_p, counts_p):
         if count > 0:
-            samples.append(mu + s * rng.standard_normal((count, d)))
+            p_samples.append(mu + s * rng.standard_normal((count, d)))
+    P = np.vstack(p_samples)
 
-    x = np.vstack(samples) #[n_samples, d]
+    #Campiona da Q
+    counts_q = rng.multinomial(n_half, weights_q)
+    q_samples = []
+    for mu, s, count in zip(means_q, stds_q, counts_q):
+        if count > 0:
+            q_samples.append(mu + s * rng.standard_normal((count, d)))
+    Q = np.vstack(q_samples)
 
-    #Valuta le densità in ogni punto campionato
-    p_x = gmm_pdf(x, means_p, stds_p, weights_p)
-    q_x = gmm_pdf(x, means_q, stds_q, weights_q)
-
-    #Stimatore importance sampling
-    #Si evitano divisioni per zero con un epsilon piccolo
-    denom = p_x + q_x
-    mask = denom > 1e-300
-    ratio = np.zeros_like(denom)
-    ratio[mask] = 2 * np.minimum(p_x[mask], q_x[mask]) / denom[mask]
-
-    return float(ratio.mean()) #ritorna un float in [0,1] che indica overlap (0 = distr. compl. separate, 1 = distr. identiche)
+    return overlap_area_kde(P, Q, seed=seed)
 
 #Stima parametri con Expectation-Maximization da dati reali
 def fit_gmm_em(
@@ -342,16 +339,13 @@ def experiment_em(
         Y_np, _ = gmm_q.sample(n_points)
         Y_np = Y_np.astype(np.float32)
 
-        #Calcola OA con le medie delle due GMM
-        means_p = [gmm.means_[k].copy() for k in range(2)]
-        means_q = [gmm_q.means_[k].copy() for k in range(2)]
+        #Calcola OA
+        P_oa, _, = gmm.sample(n_samples_oa // 2)
+        Q_oa, _, = gmm_q.sample(n_samples_oa // 2)
+        P_oa = P_oa.astype(np.float64)
+        Q_oa = Q_oa.astype(np.float64)
 
-        oa = overlap_area_mc(
-            means_p, stds_base, weights,
-            means_q, stds_base, weights,
-            n_samples = n_samples_oa,
-            seed = i,
-        )
+        oa = overlap_area_kde(P_oa, Q_oa, seed=i)
 
         #Calcola MMD²
         X = torch.from_numpy(X_np)

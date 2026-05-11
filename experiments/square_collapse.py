@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
-from bandwidth import median_bandwidth
+from utils import overlap_area_kde
 
 #1. Setup Quadrato
 #4 gaussiane isotropiche sui vertici di un quadrato centrato nell'origine
@@ -78,24 +78,7 @@ def collapse_degree(weights: np.ndarray) -> float:
     H = -np.sum(w * np.log(w)) #Hentropy
     return float(1.0 - H / np.log(n))
 
-#3. Overlap Area nello spazio 2D
-#Calcoliamo OA direttamente nello spazio delle feature (2D) e NON sulle distr. delle distanze come Eleonora.
-#Per valure le densità usiamo la formula analitica della GMM con parametri noti (vertici e sigma fissi)
-def gmm_pdf_square(
-        x: np.ndarray, #[n, 2]
-        weights: np.ndarray, #[4] - pesi delle componenti
-) -> np.ndarray:
-    """
-    Valuta la densità della GMM del quadrato in x.
-    """
-    density = np.zeros(x.shape[0])
-    for k, (mu, w) in enumerate(zip(VERTICES, weights)):
-        diff = x - mu
-        sq_dist = (diff ** 2).sum(axis=1)
-        norm = 2 * np.pi * SIGMA_DATA ** 2
-        density += w * np.exp(-sq_dist / (2 * SIGMA_DATA**2)) / norm
-    return density
-
+#3. Overlap Area
 def overlap_area_square(
         weights_q: np.ndarray, #pesi di Q DOPO COLLAPSE
         n_samples: int = 10000, #campioni Monte Carlo
@@ -105,34 +88,9 @@ def overlap_area_square(
     Stima OA tra P (pesi uniformi) e Q (pesi collassati)
     nello spazio 2D con campionamento Monte Carlo.
     """
-    rng = np.random.default_rng(seed)
-
-    #Campiona dalla miscela M = (P + Q) / 2
-    n_half = n_samples // 2
-    samples = []
-
-    #Campioni da P (pesi uniformi)
-    counts_p = rng.multinomial(n_half, BASE_WEIGHTS)
-    for mu, count in zip(VERTICES, counts_p):
-        if count > 0:
-            samples.append(mu + SIGMA_DATA * rng.standard_normal((count, 2)))
-
-    #Campioni da Q (pesi collassati)
-    counts_q = rng.multinomial(n_half, weights_q)
-    for mu, count in zip(VERTICES, counts_q):
-        if count > 0:
-            samples.append(mu + SIGMA_DATA * rng.standard_normal((count, 2)))
-
-    x = np.vstack(samples)
-    p_x = gmm_pdf_square(x, BASE_WEIGHTS)
-    q_x = gmm_pdf_square(x, weights_q)
-
-    denom = p_x + q_x
-    mask = denom > 1e-300
-    ratio = np.zeros_like(denom)
-    ratio[mask] = 2 * np.minimum(p_x[mask], q_x[mask]) / denom[mask]
-
-    return float(ratio.mean())
+    P = sample_square(BASE_WEIGHTS, n_samples // 2, seed=seed)
+    Q = sample_square(weights_q, n_samples // 2, seed=seed + 99999)
+    return overlap_area_kde(P, Q, seed = seed)
 
 #4. Esperimento collapse con Dirichlet
 def experiment_square_collapse(

@@ -15,8 +15,6 @@ Riferimento:
 
 import sys, os
 
-from networkx.algorithms.bipartite.basic import density
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
@@ -32,6 +30,7 @@ from sklearn.datasets import load_breast_cancer
 from device import get_device, move_to_device
 from mmd import compute_mmd2
 from bandwidth import median_bandwidth
+from utils import overlap_area_kde
 
 #1. Fit della GMM base
 def fit_base_gmm(n_components: int = 3, seed: int = 0):
@@ -99,22 +98,6 @@ def collapse_degree(weights: np.ndarray) -> float:
     return float(1.0 - H / H_max)
 
 #3. Overlap Area tra GMM con pesi diversi
-#P e Q hanno stesse medie e covarianze - solo pesi diversi, questo è mode collapse
-#Valuta la densità di una GMM in x dati parametri espliciti
-def gmm_pdf_from_params(
-        x: np.ndarray,
-        means: np.ndarray,
-        stds: np.ndarray,
-        weights: np.ndarray,
-) -> np.ndarray:
-    density = np.zeros(x.shape[0])
-    for k in range(len(weights)):
-        diff = x - means[k]
-        sq_dist = (diff ** 2).sum(axis=1)
-        norm = (2 * np.pi * stds[k]**2) ** (x.shape[1] / 2)
-        density += weights[k] * np.exp(-sq_dist / (2 * stds[k]**2)) / norm
-    return density
-
 #Stima OA tra P (pesi base GMM) e Q (pesi collassati)
 def overlap_area_collpase(
         gmm: GaussianMixture,
@@ -129,31 +112,24 @@ def overlap_area_collpase(
     weights_p = gmm.weights_
     d = means.shape[1]
 
-    #Campiona dalla miscela M = (P + Q) / 2
     n_half = n_samples // 2
-    samples = []
-
+    # Campiona da P
     counts_p = rng.multinomial(n_half, weights_p)
+    p_samples = []
     for k, count in enumerate(counts_p):
         if count > 0:
-            samples.append(means[k] + stds[k] * rng.standard_normal((count, d)))
+            p_samples.append(means[k] + stds[k] * rng.standard_normal((count, d)))
+    P = np.vstack(p_samples)
 
+    #Campiona da Q
     counts_q = rng.multinomial(n_half, weights_q)
+    q_samples = []
     for k, count in enumerate(counts_q):
         if count > 0:
-            samples.append(means[k] + stds[k] * rng.standard_normal((count, d)))
+            q_samples.append(means[k] + stds[k] * rng.standard_normal((count, d)))
+    Q = np.vstack(q_samples)
 
-    x = np.vstack(samples)
-
-    p_x = gmm_pdf_from_params(x, means, stds, weights_p)
-    q_x = gmm_pdf_from_params(x, means, stds, weights_q)
-
-    denom = p_x + q_x
-    mask = denom > 1e-300
-    ratio = np.zeros_like(denom)
-    ratio[mask] = 2 * np.minimum(p_x[mask], q_x[mask]) / denom[mask]
-
-    return float(ratio.mean())
+    return overlap_area_kde(P, Q, seed=seed)
 
 #4. Esperimento collapse
 #Per ogni valore di K: 1. Campiona pesi collassati da Dir(K*c)
