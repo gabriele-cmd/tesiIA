@@ -52,7 +52,7 @@ def prepare_composers(csv_path: str, midi_root: str, output_dir: str):
         copied = 0
         for _, row in subset.iterrows():
             #Il .csv ha una colonna 'midi_filename' con path relativo
-            src = midi_root / row['midi_filename']
+            src = midi_path / row['midi_filename']
             if src.exists():
                 shutil.copy2(src, dest / src.name)
                 copied += 1
