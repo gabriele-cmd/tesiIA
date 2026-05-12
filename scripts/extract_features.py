@@ -118,14 +118,14 @@ if __name__ == "__main__":
 
     for composer in COMPOSERS:
         pch_features, pctm_features = process_composer(chunks_dir, composer)
-    out_pch = output_dir / f"{composer}_pch.npy"
-    out_pctm = output_dir / f"{composer}_pctm.npy"
+        out_pch = output_dir / f"{composer}_pch.npy"
+        out_pctm = output_dir / f"{composer}_pctm.npy"
 
-    np.save(out_pch, pch_features)
-    np.save(out_pctm, pctm_features)
+        np.save(out_pch, pch_features)
+        np.save(out_pctm, pctm_features)
 
-    print(f" Salvato: {out_pch} shape={pch_features.shape}")
-    print(f" Salvato: {out_pctm} shape={pctm_features.shape}")
+        print(f" Salvato: {out_pch} shape={pch_features.shape}")
+        print(f" Salvato: {out_pctm} shape={pctm_features.shape}")
 
     print("\n" + "=" * 55)
     print("Estrazione completata.")
