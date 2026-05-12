@@ -65,7 +65,7 @@ def prepare_composers(csv_path: str, midi_root: str, output_dir: str):
     for folder_name in COMPOSERS:
         folder = output_dir / folder_name
         if folder.exists():
-            n = len(list(folder.glob("*.midi"))) + len(list(folder.glob("*.midi")))
+            n = len(list(folder.glob("*.mid"))) + len(list(folder.glob("*.midi")))
             print(f" {folder_name}/: {n} file MIDI")
 
 if __name__ == "__main__":
