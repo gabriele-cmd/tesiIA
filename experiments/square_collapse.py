@@ -176,7 +176,6 @@ def experiment_square_collapse(
     return results
 
 #5. Grafici e Main
-
 #GRAFICO ANDAMENTO COLLAPSE DEGREE
 def plot_square_collapse(results: dict, output_dir: str = "results", n_trials: int = 100) -> None:
     os.makedirs(output_dir, exist_ok=True)
@@ -323,6 +322,8 @@ def plot_kde(results: dict, output_dir: str = "results", seed: int = 0, n_trials
     plt.close()
 
 if __name__ == "__main__":
+    import time
+    t0 = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_points",   type=int, default=400)
     parser.add_argument("--n_samples",  type=int, default=10000)
@@ -349,6 +350,7 @@ if __name__ == "__main__":
 
     corr = float(np.corrcoef(results['oa'], results['mmd2'])[0, 1])
     print(f"\n  r(OA, MMD²) = {corr:.4f}")
+    print(f"\nTempo totale: {time.time() - t0:.1f}s")
     print("\n" + "="*55)
     print("Analisi completata.")
     print("="*55)
