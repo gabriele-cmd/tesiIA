@@ -255,7 +255,8 @@ def plot_results(
     ax.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
 
     plt.tight_layout()
-    path = os.path.join(output_dir, f"maestro_collapse_{feature_type}.png")
+    composers_str = "_".join(c for c in composers)
+    path = os.path.join(output_dir, f"maestro_collapse_{feature_type}_{composers_str}.png")
     plt.savefig(path, dpi=150, bbox_inches='tight')
     print(f"\n  Grafico salvato: {path}")
     plt.close()

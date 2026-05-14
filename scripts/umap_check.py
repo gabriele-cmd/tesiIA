@@ -111,6 +111,7 @@ if __name__ == "__main__":
     output_dir.mkdir(parents=True, exist_ok=True)
     composers = args.composers
     colors = [COMPOSER_COLORS[c] for c in composers]
+    composers_str = "_".join(c for c in composers)
 
     print("=" * 55)
     print("UMAP Safety Check — Cluster per compositore")
@@ -126,7 +127,7 @@ if __name__ == "__main__":
     plot_umap(
         emb_pch, labels_pch,
         title="UMAP — Pitch Class Histogram (PCH)",
-        output_path=output_dir / "umap_pch.png",
+        output_path=output_dir / f"umap_pch_{composers_str}.png",
         composers = composers,
         colors = colors,
     )
@@ -141,7 +142,7 @@ if __name__ == "__main__":
     plot_umap(
         emb_pctm, labels_pctm,
         title="UMAP — Pitch Class Transition Matrix (PCTM)",
-        output_path=output_dir / "umap_pctm.png",
+        output_path=output_dir / f"umap_pctm_{composers_str}.png",
         composers = composers,
         colors = colors,
     )
@@ -155,7 +156,7 @@ if __name__ == "__main__":
     plot_umap(
         emb_both, labels_pch,
         title="UMAP — PCH + PCTM (concatenati)",
-        output_path=output_dir / "umap_both.png",
+        output_path=output_dir / f"umap_both_{composers_str}.png",
         composers = composers,
         colors = colors,
     )
