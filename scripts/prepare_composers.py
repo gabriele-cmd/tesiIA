@@ -17,6 +17,8 @@ COMPOSERS = {
     'mozart': 'Mozart',
     'chopin': 'Chopin',
     'debussy': 'Debussy',
+    'bach': 'Bach',
+    'beethoven': 'Beethoven',
 }
 
 def prepare_composers(csv_path: str, midi_root: str, output_dir: str):
