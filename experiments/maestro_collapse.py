@@ -24,14 +24,11 @@ from device import get_device, move_to_device
 from mmd import compute_mmd2
 from utils import overlap_area_kde
 
-#CONFIGURAZIONE
-COMPOSERS = ['mozart', 'chopin', 'debussy']
-BASE_WEIGHTS = np.array([1/3, 1/3, 1/3]) #pesi uniformi per P
-
 #1. Caricamento feature dataset reale
 def load_features(
         features_dir: str, #cartella con i file .npy
         feature_type: str, #'pch, 'pctm', o qualsiasi altra feature disponibile
+        composers: list,
         n_max: int = 2000, #massimo chunk per compositore (per bilanciamento)
         seed: int = 0, #riproducibilità del subsample
 ) -> dict:
@@ -40,7 +37,7 @@ def load_features(
     features = {}
 
     print(f"\nCaricamento feature '{feature_type}':")
-    for composer in COMPOSERS:
+    for composer in composers:
         path = features_dir / f"{composer}_{feature_type}.npy"
         if not path.exists():
             raise FileNotFoundError(
@@ -113,6 +110,7 @@ def collapse_degree(weights: np.ndarray) -> float:
 def test_maestro_collapse(
         device: torch.device,
         features: dict,
+        base_weights: np.ndarray,
         n_points: int = 300, #chunk per gruppo per MMD
         n_samples_oa: int = 10000, #chunk per la stima OA campionati dal dataset
         n_trials: int = 50, #ripetizioni per ogni K
@@ -142,14 +140,14 @@ def test_maestro_collapse(
 
             #Campiona pesi collassati da Dirichlet
             w_q = sample_dirichlet_weights(
-                BASE_WEIGHTS, K, seed=trial_seed
+                base_weights, K, seed=trial_seed
             )
             w_trials.append(w_q)
             cd_trials.append(collapse_degree(w_q))
 
             #Campiona P (pesi uniformi) e Q (pesi collassati) per MMD
             X_np = sample_from_dataset(
-                features, BASE_WEIGHTS, n_points, seed=trial_seed
+                features, base_weights, n_points, seed=trial_seed
             )
             Y_np = sample_from_dataset(
                 features, w_q, n_points, seed=trial_seed + 500000
@@ -164,7 +162,7 @@ def test_maestro_collapse(
 
             #Campiona P e Q per OA
             P_oa = sample_from_dataset(
-                features, BASE_WEIGHTS, n_samples_oa // 2, seed=trial_seed + 1000000
+                features, base_weights, n_samples_oa // 2, seed=trial_seed + 1000000
             )
             Q_oa = sample_from_dataset(
                 features, w_q, n_samples_oa // 2, seed=trial_seed + 1500000
@@ -195,6 +193,7 @@ def test_maestro_collapse(
 def plot_results(
         results: dict,
         feature_type: str,
+        composers: list,
         n_trials: int,
         output_dir: str = "results/maestro_collapse",
 ) -> None:
@@ -209,7 +208,7 @@ def plot_results(
     fig.suptitle(
         f"Sensibilità di MMD² e OA al Mode Collapse — MAESTRO\n"
         f"(feature: {feature_type.upper()}, "
-        f"compositori: Mozart / Chopin / Debussy, "
+        f"compositori: {' / '.join(c.capitalize() for c in composers)}, "
         f"n_trials={n_trials})",
         fontsize=11
     )
@@ -264,20 +263,14 @@ def plot_results(
 #6. MAIN
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--features_dir", type=str,
-                        default="data/features",
-                        help="Cartella con i file .npy delle feature")
-    parser.add_argument("--feature_type", type=str,
-                        default="pch",
-                        choices=["pch", "pctm"],
-                        help="Tipo di feature da usare: pch o pctm")
+    parser.add_argument("--features_dir", type=str, default="data/features", help="Cartella con i file .npy delle feature")
+    parser.add_argument("--feature_type", type=str, default="pch", choices=["pch", "pctm"], help="Tipo di feature da usare: pch o pctm")
     parser.add_argument("--n_points", type=int, default=300)
     parser.add_argument("--n_samples", type=int, default=10000)
     parser.add_argument("--n_trials", type=int, default=50)
-    parser.add_argument("--n_max", type=int, default=2000,
-                        help="Max chunk per compositore")
-    parser.add_argument("--output_dir", type=str,
-                        default="results/maestro_collapse")
+    parser.add_argument("--n_max", type=int, default=2000, help="Max chunk per compositore")
+    parser.add_argument("--output_dir", type=str, default="results/maestro_collapse")
+    parser.add_argument("--composers", nargs="+", default=['mozart', 'chopin', 'debussy'], help="Lista compositori da usare")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -286,16 +279,21 @@ if __name__ == "__main__":
 
     device = get_device()
 
+    COMPOSERS = args.composers
+    n = len(COMPOSERS)
+    BASE_WEIGHTS = np.array([1/n] * n)
     #Carica feature dal dataset reale
     features = load_features(
         args.features_dir,
         args.feature_type,
+        composers = COMPOSERS,
         n_max = args.n_max,
     )
 
     results = test_maestro_collapse(
         device = device,
         features = features,
+        base_weights = BASE_WEIGHTS,
         n_points = args.n_points,
         n_samples_oa = args.n_samples,
         n_trials = args.n_trials,
@@ -305,6 +303,7 @@ if __name__ == "__main__":
     plot_results(
         results,
         feature_type = args.feature_type,
+        composers = COMPOSERS,
         n_trials = args.n_trials,
         output_dir = args.output_dir,
     )

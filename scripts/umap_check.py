@@ -17,16 +17,21 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import umap
 
-COMPOSERS = ['mozart', 'chopin', 'debussy']
-COLORS = ['#2196F3', '#E91E63', '#4CAF50'] #blu, rosa, verde
+COMPOSER_COLORS = {
+    'mozart':    '#2196F3',
+    'chopin':    '#E91E63',
+    'debussy':   '#4CAF50',
+    'bach':      '#FF9800',
+    'beethoven': '#9C27B0',
+}
 N_MAX = 2000 #massimo di campioni per compositore (rispecchia il compositore con meno brani chunks disponibili, Mozart con 2055
 
 #Carica le feature di tutti i compositori e costruisce il dataset con le etichette
-def load_features(features_dir: Path, feature_type: str) -> tuple:
+def load_features(features_dir: Path, feature_type: str, composers: list) -> tuple:
     X_list = [] #[n_total, d] - feature di tutti i compositori
     labels = [] #[n_total] - indice del compositore (0,1,2)
 
-    for i, composer in enumerate(COMPOSERS):
+    for i, composer in enumerate(composers):
         path = features_dir / f"{composer}_{feature_type}.npy"
         if not path.exists():
             raise FileNotFoundError(f"File non trovato: {path}")
@@ -51,10 +56,12 @@ def plot_umap(
         labels: np.ndarray,
         title: str,
         output_path: Path,
+        composers: list,
+        colors: list,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    for i, (composer, color) in enumerate(zip(COMPOSERS, COLORS)):
+    for i, (composer, color) in enumerate(zip(composers, colors)):
         mask = labels == i
         ax.scatter(
             embedding[mask, 0],
@@ -96,11 +103,14 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", default="results/umap", help="Cartella output per i grafici")
     parser.add_argument("--n_neighbors", type=int, default=15)
     parser.add_argument("--min_dist", type=float, default=0.1)
+    parser.add_argument("--composers", nargs="+", default=['mozart', 'chopin', 'debussy'], help="Lista compositori da visualizzare")
     args = parser.parse_args()
 
     features_dir = Path(args.features_dir)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    composers = args.composers
+    colors = [COMPOSER_COLORS[c] for c in composers]
 
     print("=" * 55)
     print("UMAP Safety Check — Cluster per compositore")
@@ -108,7 +118,7 @@ if __name__ == "__main__":
 
     #PCH
     print("\nCaricamento feature PCH...")
-    X_pch, labels_pch = load_features(features_dir, 'pch')
+    X_pch, labels_pch = load_features(features_dir, 'pch', composers = composers)
     print(f"  Dataset totale: {X_pch.shape}")
 
     print("  Calcolo UMAP su PCH...")
@@ -117,11 +127,13 @@ if __name__ == "__main__":
         emb_pch, labels_pch,
         title="UMAP — Pitch Class Histogram (PCH)",
         output_path=output_dir / "umap_pch.png",
+        composers = composers,
+        colors = colors,
     )
 
     #PCTM
     print("\nCaricamento feature PCTM...")
-    X_pctm, labels_pctm = load_features(features_dir, 'pctm')
+    X_pctm, labels_pctm = load_features(features_dir, 'pctm', composers = composers)
     print(f"  Dataset totale: {X_pctm.shape}")
 
     print("  Calcolo UMAP su PCTM...")
@@ -130,6 +142,8 @@ if __name__ == "__main__":
         emb_pctm, labels_pctm,
         title="UMAP — Pitch Class Transition Matrix (PCTM)",
         output_path=output_dir / "umap_pctm.png",
+        composers = composers,
+        colors = colors,
     )
 
     #PCH + PCTM concatenati
@@ -142,6 +156,8 @@ if __name__ == "__main__":
         emb_both, labels_pch,
         title="UMAP — PCH + PCTM (concatenati)",
         output_path=output_dir / "umap_both.png",
+        composers = composers,
+        colors = colors,
     )
 
     print("\n" + "=" * 55)
