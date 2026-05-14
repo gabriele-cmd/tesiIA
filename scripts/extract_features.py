@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 #12 Class Pitch
 N_PITCH_CLASSES = 12
-COMPOSERS = ['mozart', 'chopin', 'debussy']
+COMPOSERS = ['mozart', 'chopin', 'debussy', 'bach', 'beethoven']
 
 #FEATURE 1 - Pitch Class Histogram (PCH)
 #Conta quante volte appare ciascuna delle 12 note, catturando il profilo armonico del compositore
@@ -106,6 +106,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--chunks_dir", required=True, help="Cartella con le sottocartelle dei chunk per compositore")
     parser.add_argument("--output", required=True, help="Cartella dove salvare i file .npy delle feature")
+    parser.add_argument("--composers", nargs="+", default=['mozart', 'chopin', 'debussy'], help="Lista compositori da processare")
     args = parser.parse_args()
 
     chunks_dir = Path(args.chunks_dir)
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     print("Estrazione feature PCH + PCTM da chunk MIDI")
     print("=" * 55)
 
-    for composer in COMPOSERS:
+    for composer in args.composers:
         pch_features, pctm_features = process_composer(chunks_dir, composer)
         out_pch = output_dir / f"{composer}_pch.npy"
         out_pctm = output_dir / f"{composer}_pctm.npy"
