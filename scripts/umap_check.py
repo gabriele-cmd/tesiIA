@@ -104,6 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_neighbors", type=int, default=15)
     parser.add_argument("--min_dist", type=float, default=0.1)
     parser.add_argument("--composers", nargs="+", default=['mozart', 'chopin', 'debussy'], help="Lista compositori da visualizzare")
+    parser.add_argument("--feature_type", type=str, default=None, choices=["pch", "pctm", "avg_pitch", "pitch_range", "avg_interval", "interval_histogram"], help="Se specificato esegue UMAP solo su questa feature")
     args = parser.parse_args()
 
     features_dir = Path(args.features_dir)
@@ -117,49 +118,61 @@ if __name__ == "__main__":
     print("UMAP Safety Check — Cluster per compositore")
     print("=" * 55)
 
-    #PCH
-    print("\nCaricamento feature PCH...")
-    X_pch, labels_pch = load_features(features_dir, 'pch', composers = composers)
-    print(f"  Dataset totale: {X_pch.shape}")
+    composers_str = "_".join(c for c in composers)
 
-    print("  Calcolo UMAP su PCH...")
-    emb_pch = run_umap(X_pch, args.n_neighbors, args.min_dist)
-    plot_umap(
-        emb_pch, labels_pch,
-        title="UMAP — Pitch Class Histogram (PCH)",
-        output_path=output_dir / f"umap_pch_{composers_str}.png",
-        composers = composers,
-        colors = colors,
-    )
+    if args.feature_type is not None:
+        # Modalità singola feature
+        print(f"\nCaricamento feature '{args.feature_type}'...")
+        X, labels = load_features(features_dir, args.feature_type, composers)
+        print(f"  Dataset totale: {X.shape}")
+        print(f"  Calcolo UMAP su {args.feature_type}...")
+        emb = run_umap(X, args.n_neighbors, args.min_dist)
+        plot_umap(
+            emb, labels,
+            title=f"UMAP — {args.feature_type.upper()}",
+            output_path=output_dir / f"umap_{args.feature_type}_{composers_str}.png",
+            composers=composers,
+            colors=colors,
+        )
+    else:
+        # Modalità default: PCH, PCTM e both
+        print("\nCaricamento feature PCH...")
+        X_pch, labels_pch = load_features(features_dir, 'pch', composers)
+        print(f"  Dataset totale: {X_pch.shape}")
+        print("  Calcolo UMAP su PCH...")
+        emb_pch = run_umap(X_pch, args.n_neighbors, args.min_dist)
+        plot_umap(
+            emb_pch, labels_pch,
+            title="UMAP — Pitch Class Histogram (PCH)",
+            output_path=output_dir / f"umap_pch_{composers_str}.png",
+            composers=composers,
+            colors=colors,
+        )
 
-    #PCTM
-    print("\nCaricamento feature PCTM...")
-    X_pctm, labels_pctm = load_features(features_dir, 'pctm', composers = composers)
-    print(f"  Dataset totale: {X_pctm.shape}")
+        print("\nCaricamento feature PCTM...")
+        X_pctm, labels_pctm = load_features(features_dir, 'pctm', composers)
+        print(f"  Dataset totale: {X_pctm.shape}")
+        print("  Calcolo UMAP su PCTM...")
+        emb_pctm = run_umap(X_pctm, args.n_neighbors, args.min_dist)
+        plot_umap(
+            emb_pctm, labels_pctm,
+            title="UMAP — Pitch Class Transition Matrix (PCTM)",
+            output_path=output_dir / f"umap_pctm_{composers_str}.png",
+            composers=composers,
+            colors=colors,
+        )
 
-    print("  Calcolo UMAP su PCTM...")
-    emb_pctm = run_umap(X_pctm, args.n_neighbors, args.min_dist)
-    plot_umap(
-        emb_pctm, labels_pctm,
-        title="UMAP — Pitch Class Transition Matrix (PCTM)",
-        output_path=output_dir / f"umap_pctm_{composers_str}.png",
-        composers = composers,
-        colors = colors,
-    )
-
-    #PCH + PCTM concatenati
-    print("\nCalcolo UMAP su PCH + PCTM concatenati...")
-    X_both = np.hstack([X_pch, X_pctm])
-    print(f"  Dataset totale: {X_both.shape}")
-
-    emb_both = run_umap(X_both, args.n_neighbors, args.min_dist)
-    plot_umap(
-        emb_both, labels_pch,
-        title="UMAP — PCH + PCTM (concatenati)",
-        output_path=output_dir / f"umap_both_{composers_str}.png",
-        composers = composers,
-        colors = colors,
-    )
+        print("\nCalcolo UMAP su PCH + PCTM concatenati...")
+        X_both = np.hstack([X_pch, X_pctm])
+        print(f"  Dataset totale: {X_both.shape}")
+        emb_both = run_umap(X_both, args.n_neighbors, args.min_dist)
+        plot_umap(
+            emb_both, labels_pch,
+            title="UMAP — PCH + PCTM (concatenati)",
+            output_path=output_dir / f"umap_both_{composers_str}.png",
+            composers=composers,
+            colors=colors,
+        )
 
     print("\n" + "=" * 55)
     print("Safety check completato.")

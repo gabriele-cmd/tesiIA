@@ -265,7 +265,7 @@ def plot_results(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--features_dir", type=str, default="data/features", help="Cartella con i file .npy delle feature")
-    parser.add_argument("--feature_type", type=str, default="pch", choices=["pch", "pctm"], help="Tipo di feature da usare: pch o pctm")
+    parser.add_argument("--feature_type", type=str, default="pch", choices=["pch", "pctm", "avg_pitch", "pitch_range", "avg_interval", "interval_histogram"], help="Tipo di feature da usare: pch o pctm")
     parser.add_argument("--n_points", type=int, default=300)
     parser.add_argument("--n_samples", type=int, default=10000)
     parser.add_argument("--n_trials", type=int, default=50)
