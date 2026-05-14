@@ -15,7 +15,6 @@ from tqdm import tqdm
 
 #12 Class Pitch
 N_PITCH_CLASSES = 12
-COMPOSERS = ['mozart', 'chopin', 'debussy', 'bach', 'beethoven']
 
 #FEATURE 1 - Pitch Class Histogram (PCH)
 #Conta quante volte appare ciascuna delle 12 note, catturando il profilo armonico del compositore
@@ -190,13 +189,12 @@ if __name__ == "__main__":
     print("=" * 55)
 
     for composer in args.composers:
-        for composer in args.composers:
-            feat_dict = process_composer(chunks_dir, composer)
+        feat_dict = process_composer(chunks_dir, composer)
 
-            for feat_name, data in feat_dict.items():
-                out_path = output_dir / f"{composer}_{feat_name}.npy"
-                np.save(out_path, data)
-                print(f" Salvato: {out_path} shape={data.shape}")
+        for feat_name, data in feat_dict.items():
+            out_path = output_dir / f"{composer}_{feat_name}.npy"
+            np.save(out_path, data)
+            print(f" Salvato: {out_path} shape={data.shape}")
 
     print("\n" + "=" * 55)
     print("Estrazione completata.")
