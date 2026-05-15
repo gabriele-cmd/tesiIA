@@ -16,6 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pathlib import Path
 import umap
+from sklearn.preprocessing import StandardScaler
 
 COMPOSER_COLORS = {
     'mozart':    '#2196F3',
@@ -48,7 +49,10 @@ def load_features(features_dir: Path, feature_type: str, composers: list) -> tup
         labels.extend([i] * len(data))
         print(f" {composer} ({feature_type}): {len(data)} campioni")
 
-    return np.vstack(X_list), np.array(labels)
+    X = np.vstack(X_list)
+    X = StandardScaler().fit_transform(X)
+    return X, np.array(labels)
+    #return np.vstack(X_list), np.array(labels)
 
 #Plotta la proiezione UMAP
 def plot_umap(
