@@ -245,7 +245,7 @@ def process_composer(chunks_dir: Path, composer: str) -> dict:
     for midi_path in tqdm(midi_files, desc=f"   Estrazione {composer}"):
         feat = extract_features(str(midi_path))
         if feat is not None:
-            pch, pctm, avg_p, p_range, avg_int, ih, nltm, nlh = feat
+            pch, pctm, avg_p, p_range, avg_int, ih, nlh, nltm = feat
             lists['pch'].append(pch)
             lists['pctm'].append(pctm)
             lists['avg_pitch'].append(avg_p)
