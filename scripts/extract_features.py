@@ -237,19 +237,23 @@ def process_composer(chunks_dir: Path, composer: str) -> dict:
         'pitch_range': [],
         'avg_interval': [],
         'interval_histogram': [],
+        'nlh': [],
+        'nltm': [],
     }
     skipped = 0
 
     for midi_path in tqdm(midi_files, desc=f"   Estrazione {composer}"):
         feat = extract_features(str(midi_path))
         if feat is not None:
-            pch, pctm, avg_p, p_range, avg_int, ih = feat
+            pch, pctm, avg_p, p_range, avg_int, ih, nltm, nlh = feat
             lists['pch'].append(pch)
             lists['pctm'].append(pctm)
             lists['avg_pitch'].append(avg_p)
             lists['pitch_range'].append(p_range)
             lists['avg_interval'].append(avg_int)
             lists['interval_histogram'].append(ih)
+            lists['nlh'].append(nlh)
+            lists['nltm'].append(nltm)
         else:
             skipped += 1
     n_valid = len(lists['pch'])
