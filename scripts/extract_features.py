@@ -113,6 +113,89 @@ def interval_histogram(midi: pretty_midi.PrettyMIDI) -> np.ndarray:
         counts /= total
     return counts
 
+#FEATURE 7 - Note Lenght Histogram (NLH)
+#Categorie ritmiche come da Yang & Lerch
+NOTE_LENGHTS = [
+    4.0, #full note
+    2.0, #half note
+    1.0, #quarter note
+    0.5, #8th note
+    0.25, #16th note
+    3.0, #dotted half
+    1.5, #dotted quarter
+    0.75, #dotted 8th
+    0.375,#dotted 16th
+    2/3, #half triplet
+    1/3, #quarter triplet
+    1/6, #8th triplet
+]
+N_NOTE_LENGTHS = len(NOTE_LENGHTS)
+
+#Quantizza una durata in beats alla categoria ritmica più vicina
+def quantize_duration(duration_beats: float) -> int:
+    distances = [abs(duration_beats - l) for l in NOTE_LENGHTS]
+    return int(np.argmin(distances))
+#Calcola il NLH normalizzato. Ogni nota è quantizzata alla categoria ritmica a lei più vicina
+def note_length_histogram(
+        midi: pretty_midi.PrettyMIDI,
+) -> np.ndarray:
+    counts = np.zeros(N_NOTE_LENGTHS)
+
+    for instrument in midi.instruments:
+        if instrument.is_drum:
+            continue
+        for note in instrument.notes:
+            #Durata in secondi
+            duration_sec = note.end - note.start
+            #Converte secondi in beats usando il tempo del brano
+            tempo_changes = midi.get_tempo_changes()
+            if len(tempo_changes[1]) > 0:
+                bpm = tempo_changes[1][0]
+            else:
+                bpm = 120.0 #DEFAULT
+            beats_per_sec = bpm / 60.0
+            duration_beats = duration_sec * beats_per_sec
+
+            idx = quantize_duration(duration_beats)
+            counts[idx] += 1
+
+    total = counts.max()
+    if total > 0:
+        counts /= total
+    return counts
+
+#FEATURE 8 - Note Length Transition Matrix (NLTM)
+#Calcola la NLTM normalizzata per riga
+def note_length_transition_matrix(
+        midi: pretty_midi.PrettyMIDI,
+) -> np.ndarray:
+    matrix = np.zeros((N_NOTE_LENGTHS, N_NOTE_LENGTHS))
+
+    for instrument in midi.instruments:
+        if instrument.is_drum:
+            continue
+        notes = sorted(instrument.notes, key=lambda n: n.start)
+
+        tempo_changes = midi.get_tempo_changes()
+        if len(tempo_changes[1]) > 0:
+            bpm = tempo_changes[1][0]
+        else:
+            bpm = 120.0
+        beats_per_sec = bpm / 60.0
+
+        for i in range(len(notes) - 1):
+            dur_curr = (notes[i].end - notes[i].start) * beats_per_sec
+            dur_next = (notes[i+1].end - notes[i+1].start) * beats_per_sec
+            idx_curr = quantize_duration(dur_curr)
+            idx_next = quantize_duration(dur_next)
+            matrix[idx_curr, idx_next] += 1
+
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1
+    matrix /= row_sums
+
+    return matrix
+
 #Estrazione feature da un singolo chunk
 def extract_features(midi_path: str) -> tuple | None:
     try:
@@ -128,8 +211,10 @@ def extract_features(midi_path: str) -> tuple | None:
         p_range = pitch_range(midi) #[1]
         avg_int = average_pitch_interval(midi) #[1]
         ih = interval_histogram(midi)  # [13]
+        nlh = note_length_histogram(midi) # [12]
+        nltm = note_length_transition_matrix(midi) #[12, 12]
 
-        return pch, pctm.flatten(), avg_p, p_range, avg_int, ih
+        return pch, pctm.flatten(), avg_p, p_range, avg_int, ih, nlh, nltm.flatten()
 
     except Exception:
         return None
