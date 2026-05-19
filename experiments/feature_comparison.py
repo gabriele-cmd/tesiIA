@@ -156,7 +156,7 @@ def comparison(
                 Q_dict = {feat: all_features[comp_a][feat][idx_q] for feat in feature_names}
             else:
                 #Coppia reale: subsample da ciascun compositore
-                n = n_samples // 2
+                n = min(n_samples // 2, len(all_features[comp_a][feature_names[0]]))
                 idx_a = rng.choice(len(all_features[comp_a][feature_names[0]]), size=n, replace=False)
                 idx_b = rng.choice(len(all_features[comp_b][feature_names[0]]), size=n, replace=False)
                 P_dict = {feat: all_features[comp_a][feat][idx_a] for feat in feature_names}
