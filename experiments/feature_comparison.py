@@ -227,7 +227,7 @@ def plot_results(
     )
     ax.set_ylabel("Overlap Area")
     ax.set_title("OA media vs OA concatenato per coppia")
-    ax.legend()
+    ax.legend(loc='lower right')
     ax.grid(True, alpha=0.3, axis='y')
     ax.set_ylim(0, 1.05)
 
@@ -249,7 +249,7 @@ def plot_results(
     )
     ax.set_ylabel("Overlap Area")
     ax.set_title("OA per feature individuale")
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=8, loc='lower right')
     ax.grid(True, alpha=0.3, axis='y')
     ax.set_ylim(0, 1.05)
 
