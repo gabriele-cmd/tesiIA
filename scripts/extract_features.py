@@ -196,8 +196,116 @@ def note_length_transition_matrix(
 
     return matrix
 
+#FEATURE 1b - PCH con finestre scorrevoli
+#Per ogni finestra calcola PCH e poi fa la media di tutte le finestre
+def pitch_class_histogram_windowed(
+        midi: pretty_midi.PrettyMIDI,
+        window_size: float = 1.0, #durata di ogni finestra in secondi
+        hop_size: float = 0.5, #passo tra finestre consecutive, in secondi
+) -> np.ndarray:
+    total_time = midi.get_end_time()
+
+    if total_time <= 0:
+        return np.zeros(N_PITCH_CLASSES)
+
+    #Raccoglie tutte le note con i loro tempi
+    all_notes = []
+    for instrument in midi.instruments:
+        if instrument.is_drum:
+            continue
+        for note in instrument.notes:
+            all_notes.append((note.start, note.pitch))
+
+    if len(all_notes) == 0:
+        return np.zeros(N_PITCH_CLASSES)
+
+    #Scorre le finestre
+    window_pchs = []
+    t_start = 0.0
+
+    while t_start < total_time:
+        t_end = t_start + window_size
+        #Note che cadono nella finestra [t_start, t_end]
+        window_notes = [
+            pitch for (start, pitch) in all_notes
+            if t_start <= start < t_end
+        ]
+        if len(window_notes) > 0:
+            counts = np.zeros(N_PITCH_CLASSES)
+            for pitch in window_notes:
+                counts[pitch % N_PITCH_CLASSES] += 1
+            counts /= counts.sum()
+            window_pchs.append(counts)
+        t_start += hop_size
+
+    if len(window_pchs) == 0:
+        return np.zeros(N_PITCH_CLASSES)
+
+    #Aggrega: media di tutti i PCH delle finestre
+    return np.mean(window_pchs, axis=0)
+
+#FEATURE 2b - PCTM con finestre scorrevoli
+def pitch_class_transition_matrix_windowed(
+        midi: pretty_midi.PrettyMIDI,
+        window_size: float = 1.0, hop_size: float = 0.5,
+) -> np.ndarray:
+    total_time = midi.get_end_time()
+
+    if total_time <= 0:
+        return np.zeros(N_PITCH_CLASSES * N_PITCH_CLASSES)
+
+    #Raccoglie tutte le note con tempi e pitch
+    all_notes = []
+    for instrument in midi.instruments:
+        if instrument.is_drum:
+            continue
+        for note in instrument.notes:
+            all_notes.append((note.start, note.pitch))
+
+    #Ordina per tempo
+    all_notes.sort(key=lambda x: x[0])
+
+    if len(all_notes) == 0:
+        return np.zeros(N_PITCH_CLASSES * N_PITCH_CLASSES)
+
+    window_pctms = []
+    t_start = 0.0
+
+    while t_start < total_time:
+        t_end = t_start + window_size
+
+        #Note nella finestra ordinate per tempo
+        window_notes = [
+            pitch for (start, pitch) in all_notes
+            if t_start <= start < t_end
+        ]
+
+        if len(window_notes) >= 2:
+            matrix = np.zeros((N_PITCH_CLASSES, N_PITCH_CLASSES))
+            for i in range(len(window_notes)-1):
+                pc_curr = window_notes[i] % N_PITCH_CLASSES
+                pc_next = window_notes[i+1] % N_PITCH_CLASSES
+                matrix[pc_curr, pc_next] += 1
+
+            row_sums = matrix.sum(axis=1, keepdims=True)
+            row_sums[row_sums == 0] = 1
+            matrix /= row_sums
+            window_pctms.append(matrix.flatten())
+
+        t_start += hop_size
+
+    if len(window_pctms) == 0:
+        return np.zeros(N_PITCH_CLASSES * N_PITCH_CLASSES)
+
+    return np.mean(window_pctms, axis=0)
+
 #Estrazione feature da un singolo chunk
-def extract_features(midi_path: str) -> tuple | None:
+def extract_features(
+        midi_path: str,
+        windowed: bool = False,
+        window_size: float = 1.0,
+        hop_size: float = 0.5,
+) -> tuple | None:
     try:
         midi = pretty_midi.PrettyMIDI(midi_path)
         #Verifica che ci siano note
@@ -205,22 +313,29 @@ def extract_features(midi_path: str) -> tuple | None:
         if total_notes == 0:
             return None
 
-        pch = pitch_class_histogram(midi) #[12]
-        pctm = pitch_class_transition_matrix(midi) #[12, 12]
-        avg_p = average_pitch(midi) #[1]
-        p_range = pitch_range(midi) #[1]
-        avg_int = average_pitch_interval(midi) #[1]
+        if windowed:
+            pch = pitch_class_histogram_windowed(midi, window_size, hop_size)
+            pctm = pitch_class_transition_matrix_windowed(midi, window_size, hop_size)
+        else:
+            pch = pitch_class_histogram(midi)  # [12]
+            pctm = pitch_class_transition_matrix(midi)  # [12, 12]
         ih = interval_histogram(midi)  # [13]
         nlh = note_length_histogram(midi) # [12]
         nltm = note_length_transition_matrix(midi) #[12, 12]
 
-        return pch, pctm.flatten(), avg_p, p_range, avg_int, ih, nlh, nltm.flatten()
+        return pch, pctm.flatten(), ih, nlh, nltm.flatten()
 
     except Exception:
         return None
 
 #Elaborazione di una cartella di chunk
-def process_composer(chunks_dir: Path, composer: str) -> dict:
+def process_composer(
+        chunks_dir: Path,
+        composer: str,
+        windowed: bool = False,
+        window_size: float = 1.0,
+        hop_size: float = 0.5,
+) -> dict:
     folder = chunks_dir / composer
     if not folder.exists():
         raise FileNotFoundError(f"Cartella non trovata: {folder}")
@@ -243,7 +358,12 @@ def process_composer(chunks_dir: Path, composer: str) -> dict:
     skipped = 0
 
     for midi_path in tqdm(midi_files, desc=f"   Estrazione {composer}"):
-        feat = extract_features(str(midi_path))
+        feat = extract_features(
+            str(midi_path),
+            windowed = windowed,
+            window_size = window_size,
+            hop_size = hop_size
+        )
         if feat is not None:
             pch, pctm, avg_p, p_range, avg_int, ih, nlh, nltm = feat
             lists['pch'].append(pch)
@@ -267,6 +387,9 @@ if __name__ == "__main__":
     parser.add_argument("--chunks_dir", required=True, help="Cartella con le sottocartelle dei chunk per compositore")
     parser.add_argument("--output", required=True, help="Cartella dove salvare i file .npy delle feature")
     parser.add_argument("--composers", nargs="+", default=['mozart', 'chopin', 'debussy'], help="Lista compositori da processare")
+    parser.add_argument("--window_size", type=float, default=1.0, help="Dimensione finestra in secondi (default: 1.0)")
+    parser.add_argument("--hop_size", type=float, default=0.5, help="Passo tra finestre in secondi (default: 0.5)")
+    parser.add_argument("--windowed", action="store_true", help="Usa PCH con finestre scorrevoli invece di PCH statico")
     args = parser.parse_args()
 
     chunks_dir = Path(args.chunks_dir)
@@ -278,10 +401,16 @@ if __name__ == "__main__":
     print("=" * 55)
 
     for composer in args.composers:
-        feat_dict = process_composer(chunks_dir, composer)
+        feat_dict = process_composer(
+            chunks_dir, composer,
+            windowed=args.windowed,
+            window_size=args.window_size,
+            hop_size=args.hop_size,
+        )
 
         for feat_name, data in feat_dict.items():
-            out_path = output_dir / f"{composer}_{feat_name}.npy"
+            suffix = f"_w{args.window_size}_h{args.hop_size}" if args.windowed else ""
+            out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
             np.save(out_path, data)
             print(f" Salvato: {out_path} shape={data.shape}")
 
