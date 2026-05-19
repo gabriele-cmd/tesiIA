@@ -348,9 +348,6 @@ def process_composer(
     lists = {
         'pch': [],
         'pctm': [],
-        'avg_pitch': [],
-        'pitch_range': [],
-        'avg_interval': [],
         'interval_histogram': [],
         'nlh': [],
         'nltm': [],
@@ -365,12 +362,9 @@ def process_composer(
             hop_size = hop_size
         )
         if feat is not None:
-            pch, pctm, avg_p, p_range, avg_int, ih, nlh, nltm = feat
+            pch, pctm, ih, nlh, nltm = feat
             lists['pch'].append(pch)
             lists['pctm'].append(pctm)
-            lists['avg_pitch'].append(avg_p)
-            lists['pitch_range'].append(p_range)
-            lists['avg_interval'].append(avg_int)
             lists['interval_histogram'].append(ih)
             lists['nlh'].append(nlh)
             lists['nltm'].append(nltm)
