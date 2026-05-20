@@ -402,8 +402,13 @@ if __name__ == "__main__":
             hop_size=args.hop_size,
         )
 
+        WINDOWED_FEATURES = ['pch', 'pctm']
+
         for feat_name, data in feat_dict.items():
-            suffix = f"_w{args.window_size}_h{args.hop_size}" if args.windowed else ""
+            if args.windowed and feat_name in WINDOWED_FEATURES:
+                suffix = f"_w{args.window_size}_h{args.hop_size}"
+            else:
+                suffix = ""
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
             np.save(out_path, data)
             print(f" Salvato: {out_path} shape={data.shape}")
