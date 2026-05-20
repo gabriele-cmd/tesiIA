@@ -14,9 +14,10 @@ def overlap_area_kde(
 ) -> float:
 
     #Distanze intra-P (triangolo superiore)
-    n = len(p)
-    i_idx, j_idx = np.triu_indices(n, k=1)
-    d_pp = np.linalg.norm(p[i_idx] - p[j_idx], axis=1)
+    rng2 = np.random.default_rng(seed + 1)
+    p_intra = p[rng2.choice(len(p), min(subsample, len(p)), replace=False)]
+    i_idx, j_idx = np.triu_indices(len(p_intra), k=1)
+    d_pp = np.linalg.norm(p_intra[i_idx] - p_intra[j_idx], axis=1)
 
     #Distanze inter P-Q (con subsample se necessario)
     rng = np.random.default_rng(seed)
