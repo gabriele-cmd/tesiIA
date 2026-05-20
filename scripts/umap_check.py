@@ -108,7 +108,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_neighbors", type=int, default=15)
     parser.add_argument("--min_dist", type=float, default=0.1)
     parser.add_argument("--composers", nargs="+", default=['mozart', 'chopin', 'debussy'], help="Lista compositori da visualizzare")
-    parser.add_argument("--feature_type", type=str, default=None, choices=["pch", "pctm", "avg_pitch", "pitch_range", "avg_interval", "interval_histogram", "nlh", "nltm"], help="Se specificato esegue UMAP solo su questa feature")
+    parser.add_argument("--feature_type", type=str, default=None, help="Se specificato esegue UMAP solo su questa feature")
     args = parser.parse_args()
 
     features_dir = Path(args.features_dir)
