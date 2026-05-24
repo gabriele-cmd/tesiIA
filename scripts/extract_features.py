@@ -321,7 +321,7 @@ def extract_features(
             return None
 
         #Scarta chunk troppo corti quando si usa concat
-        if aggregation == 'concat' and midi.get_end_time() < min_duration:
+        if aggregation == 'concat' and midi.get_end_time() < 10.24:
             return None
 
         if windowed:
