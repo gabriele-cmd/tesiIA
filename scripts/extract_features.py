@@ -202,6 +202,7 @@ def pitch_class_histogram_windowed(
         midi: pretty_midi.PrettyMIDI,
         window_size: float = 1.0, #durata di ogni finestra in secondi
         hop_size: float = 0.5, #passo tra finestre consecutive, in secondi
+        aggregation: str = 'mean' #metodo di calcolo vettore features, mean o concat
 ) -> np.ndarray:
     total_time = midi.get_end_time()
 
@@ -241,13 +242,16 @@ def pitch_class_histogram_windowed(
     if len(window_pchs) == 0:
         return np.zeros(N_PITCH_CLASSES)
 
-    #Aggrega: media di tutti i PCH delle finestre
+    #Aggrega: concatena o media di tutti i PCH delle finestre
+    if aggregation == 'concat':
+        return np.concatenate(window_pchs)
     return np.mean(window_pchs, axis=0)
 
 #FEATURE 2b - PCTM con finestre scorrevoli
 def pitch_class_transition_matrix_windowed(
         midi: pretty_midi.PrettyMIDI,
         window_size: float = 1.0, hop_size: float = 0.5,
+        aggregation: str = 'mean'
 ) -> np.ndarray:
     total_time = midi.get_end_time()
 
@@ -297,6 +301,8 @@ def pitch_class_transition_matrix_windowed(
     if len(window_pctms) == 0:
         return np.zeros(N_PITCH_CLASSES * N_PITCH_CLASSES)
 
+    if aggregation == 'concat':
+        return np.concatenate(window_pctms)
     return np.mean(window_pctms, axis=0)
 
 #Estrazione feature da un singolo chunk
@@ -305,6 +311,7 @@ def extract_features(
         windowed: bool = False,
         window_size: float = 1.0,
         hop_size: float = 0.5,
+        aggregation: str = 'mean',
 ) -> tuple | None:
     try:
         midi = pretty_midi.PrettyMIDI(midi_path)
@@ -314,8 +321,8 @@ def extract_features(
             return None
 
         if windowed:
-            pch = pitch_class_histogram_windowed(midi, window_size, hop_size)
-            pctm = pitch_class_transition_matrix_windowed(midi, window_size, hop_size)
+            pch = pitch_class_histogram_windowed(midi, window_size, hop_size, aggregation)
+            pctm = pitch_class_transition_matrix_windowed(midi, window_size, hop_size, aggregation)
         else:
             pch = pitch_class_histogram(midi)  # [12]
             pctm = pitch_class_transition_matrix(midi)  # [12, 12]
@@ -335,6 +342,7 @@ def process_composer(
         windowed: bool = False,
         window_size: float = 1.0,
         hop_size: float = 0.5,
+        aggregation: str = 'mean',
 ) -> dict:
     folder = chunks_dir / composer
     if not folder.exists():
@@ -359,7 +367,8 @@ def process_composer(
             str(midi_path),
             windowed = windowed,
             window_size = window_size,
-            hop_size = hop_size
+            hop_size = hop_size,
+            aggregation = aggregation,
         )
         if feat is not None:
             pch, pctm, ih, nlh, nltm = feat
@@ -384,6 +393,7 @@ if __name__ == "__main__":
     parser.add_argument("--window_size", type=float, default=1.0, help="Dimensione finestra in secondi (default: 1.0)")
     parser.add_argument("--hop_size", type=float, default=0.5, help="Passo tra finestre in secondi (default: 0.5)")
     parser.add_argument("--windowed", action="store_true", help="Usa PCH con finestre scorrevoli invece di PCH statico")
+    parser.add_argument("--aggregation", type=str, default="mean", choices=["mean", "concat"], help="Aggregazione finestre: mean o concat (default: mean)")
     args = parser.parse_args()
 
     chunks_dir = Path(args.chunks_dir)
@@ -400,13 +410,14 @@ if __name__ == "__main__":
             windowed=args.windowed,
             window_size=args.window_size,
             hop_size=args.hop_size,
+            aggregation = args.aggregation,
         )
 
         WINDOWED_FEATURES = ['pch', 'pctm']
 
         for feat_name, data in feat_dict.items():
             if args.windowed and feat_name in WINDOWED_FEATURES:
-                suffix = f"_w{args.window_size}_h{args.hop_size}"
+                suffix = f"_w{args.window_size}_h{args.hop_size}{'_concat' if args.aggregation == 'concat' else ''}" if args.windowed else ""
             else:
                 suffix = ""
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
