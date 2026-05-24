@@ -320,6 +320,10 @@ def extract_features(
         if total_notes == 0:
             return None
 
+        #Scarta chunk troppo corti quando si usa concat
+        if aggregation == 'concat' and midi.get_end_time() < min_duration:
+            return None
+
         if windowed:
             pch = pitch_class_histogram_windowed(midi, window_size, hop_size, aggregation)
             pctm = pitch_class_transition_matrix_windowed(midi, window_size, hop_size, aggregation)
