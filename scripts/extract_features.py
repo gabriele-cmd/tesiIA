@@ -244,6 +244,8 @@ def pitch_class_histogram_windowed(
 
     #Aggrega: concatena o media di tutti i PCH delle finestre
     if aggregation == 'concat':
+        if len(window_pchs) != 49:
+            return None
         return np.concatenate(window_pchs)
     return np.mean(window_pchs, axis=0)
 
@@ -302,6 +304,8 @@ def pitch_class_transition_matrix_windowed(
         return np.zeros(N_PITCH_CLASSES * N_PITCH_CLASSES)
 
     if aggregation == 'concat':
+        if len(window_pctms) != 49:
+            return None
         return np.concatenate(window_pctms)
     return np.mean(window_pctms, axis=0)
 
@@ -327,6 +331,8 @@ def extract_features(
         if windowed:
             pch = pitch_class_histogram_windowed(midi, window_size, hop_size, aggregation)
             pctm = pitch_class_transition_matrix_windowed(midi, window_size, hop_size, aggregation)
+            if pch is None or pctm is None:
+                return None
         else:
             pch = pitch_class_histogram(midi)  # [12]
             pctm = pitch_class_transition_matrix(midi)  # [12, 12]
