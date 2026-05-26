@@ -222,21 +222,20 @@ def pitch_class_histogram_windowed(
 
     #Scorre le finestre
     window_pchs = []
-    t_start = 0.0
 
-    while t_start < total_time:
+    t_starts = np.arange(0.0, total_time, hop_size)
+    for t_start in t_starts:
         t_end = t_start + window_size
-        #Note che cadono nella finestra [t_start, t_end]
         window_notes = [
             pitch for (start, pitch) in all_notes
             if t_start <= start < t_end
         ]
+        counts = np.zeros(N_PITCH_CLASSES)
         if len(window_notes) > 0:
-            counts = np.zeros(N_PITCH_CLASSES)
             for pitch in window_notes:
                 counts[pitch % N_PITCH_CLASSES] += 1
             counts /= counts.sum()
-            window_pchs.append(counts)
+        window_pchs.append(counts) #conta sempre, anche se silenziosa
         t_start += hop_size
 
     if len(window_pchs) == 0:
@@ -273,29 +272,24 @@ def pitch_class_transition_matrix_windowed(
         return np.zeros(N_PITCH_CLASSES * N_PITCH_CLASSES)
 
     window_pctms = []
-    t_start = 0.0
 
-    while t_start < total_time:
+    t_starts = np.arange(0.0, total_time, hop_size)
+    for t_start in t_starts:
         t_end = t_start + window_size
-
-        #Note nella finestra ordinate per tempo
         window_notes = [
             pitch for (start, pitch) in all_notes
             if t_start <= start < t_end
         ]
-
+        matrix = np.zeros((N_PITCH_CLASSES, N_PITCH_CLASSES))
         if len(window_notes) >= 2:
-            matrix = np.zeros((N_PITCH_CLASSES, N_PITCH_CLASSES))
-            for i in range(len(window_notes)-1):
+            for i in range(len(window_notes) - 1):
                 pc_curr = window_notes[i] % N_PITCH_CLASSES
-                pc_next = window_notes[i+1] % N_PITCH_CLASSES
+                pc_next = window_notes[i + 1] % N_PITCH_CLASSES
                 matrix[pc_curr, pc_next] += 1
-
             row_sums = matrix.sum(axis=1, keepdims=True)
             row_sums[row_sums == 0] = 1
             matrix /= row_sums
-            window_pctms.append(matrix.flatten())
-
+        window_pctms.append(matrix.flatten()) #conta sempre, anche se silenziosa
         t_start += hop_size
 
     if len(window_pctms) == 0:
@@ -315,13 +309,15 @@ def extract_features(
 ) -> tuple | None:
     try:
         midi = pretty_midi.PrettyMIDI(midi_path)
+        """
         #Verifica che ci siano note
         total_notes = sum(len(inst.notes) for inst in midi.instruments if not inst.is_drum)
         if total_notes == 0:
             return None
+        """
 
         #Scarta chunk troppo corti quando si usa concat
-        if aggregation == 'concat' and midi.get_end_time() < 10.0:
+        if aggregation == 'concat' and midi.get_end_time() < 8.0:
             return None
 
         if windowed:
@@ -336,7 +332,8 @@ def extract_features(
 
         return pch, pctm.flatten(), ih, nlh, nltm.flatten()
 
-    except Exception:
+    except Exception as e:
+        print(f"Errore su {midi_path}: {e}")
         return None
 
 #Elaborazione di una cartella di chunk
@@ -386,6 +383,16 @@ def process_composer(
     n_valid = len(lists['pch'])
     print(f"    -> {n_valid} chunk validi, {skipped} scartati")
 
+    #Tronca tutti i vettori alla stessa lunghezza (il minimo)
+    if aggregation == 'concat':
+        for key in ['pch', 'pctm']:
+            if lists[key] and args.aggregation == 'concat':
+                min_len = min(len(x) for x in lists[key])
+                lists[key] = [x[:min_len] for x in lists[key]]
+
+    lengths = [len(x) for x in lists['pch']]
+    unique_lengths = set(lengths)
+    print(f"Lunghezze PCH: {unique_lengths}")
     return {k: np.array(v, dtype=np.float32) for k, v in lists.items()}
 
 
@@ -427,6 +434,24 @@ if __name__ == "__main__":
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
             np.save(out_path, data)
             print(f" Salvato: {out_path} shape={data.shape}")
+
+    # Troncamento globale dopo aver estratto tutti i compositori
+    if args.windowed and args.aggregation == 'concat':
+        suffix = f"_w{args.window_size}_h{args.hop_size}_concat"
+        min_len_pch = min(np.load(output_dir / f"{c}_pch{suffix}.npy").shape[1]
+                          for c in args.composers)
+        min_len_pctm = min(np.load(output_dir / f"{c}_pctm{suffix}.npy").shape[1]
+                           for c in args.composers)
+
+        print(f"\nTroncamento globale: pch→{min_len_pch}, pctm→{min_len_pctm}")
+
+        for c in args.composers:
+            for feat, min_len in [('pch', min_len_pch), ('pctm', min_len_pctm)]:
+                path = output_dir / f"{c}_{feat}{suffix}.npy"
+                data = np.load(path)
+                data = data[:, :min_len]
+                np.save(path, data)
+                print(f"  {c}_{feat}: {data.shape}")
 
     print("\n" + "=" * 55)
     print("Estrazione completata.")
