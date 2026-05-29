@@ -108,7 +108,7 @@ def experiment(
         Q = Q_raw[idx_q]
 
         #Normalizza
-        P_norm, Q_norm = normalize(P, Q, n, normalizer)
+        P_norm, Q_norm = normalize(P, Q, normalizer)
 
         #MMD
         X = torch.from_numpy(P_norm.astype(np.float32))
