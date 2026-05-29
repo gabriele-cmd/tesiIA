@@ -96,6 +96,12 @@ def experiment(
     mmd2_trials = []
     oa_trials = []
 
+    # Allinea le dimensioni
+    min_dim = min(P_raw.shape[1], Q_raw.shape[1])
+    P_raw = P_raw[:, :min_dim]
+    Q_raw = Q_raw[:, :min_dim]
+    print(f"  Dimensione allineata: {min_dim}")
+
     for trial in range(n_trials):
         trial_seed = seed + trial * 100
         rng = np.random.default_rng(trial_seed)
