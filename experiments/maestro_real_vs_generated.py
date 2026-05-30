@@ -91,6 +91,8 @@ def experiment(
         Q_raw: np.ndarray,
         normalizer: str = 'standard',
         n_trials: int = 10,
+        n_samples: int = 2000,
+        baseline: bool = False,
         seed: int = 0,
 ) -> dict:
     mmd2_trials = []
@@ -107,11 +109,15 @@ def experiment(
         rng = np.random.default_rng(trial_seed)
 
         #Subsample per trial
-        n = min(len(P_raw), len(Q_raw))
-        idx_p = rng.choice(len(P_raw), n, replace=False)
-        idx_q = rng.choice(len(Q_raw), n, replace=False)
-        P = P_raw[idx_p]
-        Q = Q_raw[idx_q]
+        if baseline:
+            idx = rng.permutation(len(P_raw))
+            P = P_raw[idx[:n_samples]]
+            Q = P_raw[idx[n_samples:n_samples * 2]]
+        else:
+            idx_p = rng.choice(len(P_raw), n_samples, replace=False)
+            idx_q = rng.choice(len(Q_raw), n_samples, replace=False)
+            P = P_raw[idx_p]
+            Q = Q_raw[idx_q]
 
         #Normalizza
         P_norm, Q_norm = normalize(P, Q, normalizer)
@@ -149,6 +155,8 @@ if __name__ == "__main__":
     parser.add_argument("--n_trials", type=int, default=10)
     parser.add_argument("--output_dir", type=str,
                         default="results/real_vs_generated")
+    parser.add_argument("--baseline", action="store_true",
+                        help="Modalità baseline: confronta P_reale vs P_reale diviso in due metà")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -160,18 +168,29 @@ if __name__ == "__main__":
     device = get_device()
 
     print(f"\nCaricamento feature '{args.feature_type}':")
-    P = load_real(
-        args.features_dir_real,
-        args.real_composers,
-        args.feature_type,
-        args.n_samples,
-    )
-    Q = load_generated(
-        args.features_dir_gen,
-        args.gen_dataset,
-        args.feature_type,
-        args.n_samples,
-    )
+    if args.baseline:
+        print("\nModalità baseline — P vs P (stesso dataset diviso in due metà)")
+        P_all = load_real(
+            args.features_dir_real,
+            args.real_composers,
+            args.feature_type,
+            n_samples=999999,
+        )
+        Q = P_all
+        P = P_all
+    else:
+        Q = load_generated(
+            args.features_dir_gen,
+            args.gen_dataset,
+            args.feature_type,
+            args.n_samples,
+        )
+        P = load_real(
+            args.features_dir_real,
+            args.real_composers,
+            args.feature_type,
+            args.n_samples,
+        )
 
     print(f"\nEsperimento ({args.n_trials} trial)...")
     results = experiment(
@@ -180,6 +199,8 @@ if __name__ == "__main__":
         Q_raw=Q,
         normalizer=args.normalizer,
         n_trials=args.n_trials,
+        n_samples=args.n_samples,
+        baseline=args.baseline,
     )
 
     print(f"\n{'=' * 60}")
