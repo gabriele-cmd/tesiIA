@@ -122,6 +122,7 @@ if __name__ == "__main__":
 
     # ── Grafico ───────────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(9, 7))
+    dataset_name = args.real_composers[0].replace('_real', '').upper()
 
     # Plotta reali per primi (sotto) in grigio semitrasparente
     mask = labels == 'reale'
@@ -144,7 +145,6 @@ if __name__ == "__main__":
             zorder=2,
         )
 
-    dataset_name = args.real_composers[0].replace('_real', '').upper()
     ax.set_title(
         f"UMAP — Reale vs Generato ({dataset_name})\n"
         f"feature: {args.feature_type}, {args.n_per_group} campioni/gruppo",
