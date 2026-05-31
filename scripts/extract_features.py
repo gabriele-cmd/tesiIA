@@ -533,7 +533,10 @@ if __name__ == "__main__":
 
         for feat_name, data in feat_dict.items():
             if args.windowed and feat_name in WINDOWED_FEATURES:
-                suffix = f"_w{args.window_size}_h{args.hop_size}{'_concat' if args.aggregation == 'concat' else ''}" if args.windowed else ""
+                if args.bars_mode:
+                    suffix = f"_b{args.window_bars}_h{args.hop_bars}{'_concat' if args.aggregation == 'concat' else ''}"
+                else:
+                    suffix = f"_w{args.window_size}_h{args.hop_size}{'_concat' if args.aggregation == 'concat' else ''}"
             else:
                 suffix = ""
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
