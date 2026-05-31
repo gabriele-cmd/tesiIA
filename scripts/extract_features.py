@@ -299,6 +299,97 @@ def pitch_class_transition_matrix_windowed(
         return np.concatenate(window_pctms)
     return np.mean(window_pctms, axis=0)
 
+#stesso metodo di calcolo feature con window concatenate, ma adattato non per secondi ma in battute
+def pitch_class_histogram_windowed_bars(
+        midi: pretty_midi.PrettyMIDI,
+        window_bars: int = 2,
+        hop_bars: int = 1,
+        aggregation: str = 'concat',
+) -> np.ndarray:
+    #Ricavo BPM e time signature del brano
+    tempo_changes = midi.get_tempo_changes()
+    bpm = tempo_changes[1][0] if len(tempo_changes[1]) > 0 else 120.0
+    beats_per_sec = bpm / 60.0
+
+    ts = midi.time_signature_changes[0] if midi.time_signature_changes else None
+    beats_per_bar = ts.numerator if ts else 4
+
+    #Converti battute in secondi
+    bar_duration_sec = beats_per_bar / beats_per_sec
+    window_sec = window_bars * bar_duration_sec
+    hop_sec = hop_bars * bar_duration_sec
+    total_time = midi.get_end_time()
+
+    #Identico alla versione in secondi
+    all_notes = []
+    for instrument in midi.instruments:
+        if instrument.is_drum:
+            continue
+        for note in instrument.notes:
+            all_notes.append((note.start, note.pitch))
+
+    window_pchs = []
+    t_starts = np.arange(0.0, total_time, hop_sec)
+    for t_start in t_starts:
+        t_end = t_start + window_sec
+        window_notes = [p for (s, p) in all_notes if t_start <= s <= t_end]
+        counts = np.zeros(N_PITCH_CLASSES)
+        if len(window_notes) > 0:
+            for pitch in window_notes:
+                counts[pitch % N_PITCH_CLASSES] += 1
+            counts /= counts.sum()
+        window_pchs.append(counts)
+
+    if aggregation == 'concat':
+        return np.concatenate(window_pchs)
+    return np.mean(window_pchs, axis=0)
+
+def pitch_class_transition_matrix_windowed_bars(
+        midi: pretty_midi.PrettyMIDI,
+        window_bars: int = 2,
+        hop_bars: int = 1,
+        aggregation: str = 'concat',
+) -> np.ndarray:
+    tempo_changes = midi.get_tempo_changes()
+    bpm = tempo_changes[1][0] if len(tempo_changes[1]) > 0 else 120.0
+    beats_per_sec = bpm / 60.0
+
+    ts = midi.time_signature_changes[0] if midi.time_signature_changes else None
+    beats_per_bar = ts.numerator if ts else 4
+
+    bar_duration_sec = beats_per_bar / beats_per_sec
+    window_sec = window_bars * bar_duration_sec
+    hop_sec = hop_bars * bar_duration_sec
+    total_time = midi.get_end_time()
+
+    all_notes = []
+    for instrument in midi.instruments:
+        if instrument.is_drum:
+            continue
+        for note in instrument.notes:
+            all_notes.append((note.start, note.pitch))
+    all_notes.sort(key=lambda x: x[0])
+
+    window_pctms = []
+    t_starts = np.arange(0.0, total_time, hop_sec)
+    for t_start in t_starts:
+        t_end = t_start + window_sec
+        window_notes = [p for (s, p) in all_notes if t_start <= s <= t_end]
+        matrix = np.zeros((N_PITCH_CLASSES, N_PITCH_CLASSES))
+        if len(window_notes) >= 2:
+            for i in range(len(window_notes) - 1):
+                pc_curr = window_notes[i] % N_PITCH_CLASSES
+                pc_next = window_notes[i + 1] % N_PITCH_CLASSES
+                matrix[pc_curr, pc_next] += 1
+            row_sums = matrix.sum(axis=1, keepdims=True)
+            row_sums[row_sums == 0] = 1
+            matrix /= row_sums
+            window_pctms.append(matrix.flatten())
+
+    if aggregation == 'concat':
+        return np.concatenate(window_pctms)
+    return np.mean(window_pctms, axis=0)
+
 #Estrazione feature da un singolo chunk
 def extract_features(
         midi_path: str,
@@ -306,6 +397,9 @@ def extract_features(
         window_size: float = 1.0,
         hop_size: float = 0.5,
         aggregation: str = 'mean',
+        bars_mode: bool = False,
+        window_bars: int = 2,
+        hop_bars: int = 1,
 ) -> tuple | None:
     try:
         midi = pretty_midi.PrettyMIDI(midi_path)
@@ -320,12 +414,17 @@ def extract_features(
         if aggregation == 'concat' and midi.get_end_time() < 8.0:
             return None
 
-        if windowed:
+        if windowed and bars_mode:
+            pch = pitch_class_histogram_windowed_bars(
+                midi, window_bars, hop_bars, aggregation)
+            pctm = pitch_class_transition_matrix_windowed_bars(
+                midi, window_bars, hop_bars, aggregation)
+        elif windowed:
             pch = pitch_class_histogram_windowed(midi, window_size, hop_size, aggregation)
             pctm = pitch_class_transition_matrix_windowed(midi, window_size, hop_size, aggregation)
         else:
-            pch = pitch_class_histogram(midi)  # [12]
-            pctm = pitch_class_transition_matrix(midi)  # [12, 12]
+            pch = pitch_class_histogram(midi)
+            pctm = pitch_class_transition_matrix(midi)
         ih = interval_histogram(midi)  # [13]
         nlh = note_length_histogram(midi) # [12]
         nltm = note_length_transition_matrix(midi) #[12, 12]
@@ -405,6 +504,12 @@ if __name__ == "__main__":
     parser.add_argument("--hop_size", type=float, default=0.5, help="Passo tra finestre in secondi (default: 0.5)")
     parser.add_argument("--windowed", action="store_true", help="Usa PCH con finestre scorrevoli invece di PCH statico")
     parser.add_argument("--aggregation", type=str, default="mean", choices=["mean", "concat"], help="Aggregazione finestre: mean o concat (default: mean)")
+    parser.add_argument("--bars_mode", action="store_true",
+                        help="Usa finestre in battute invece che in secondi")
+    parser.add_argument("--window_bars", type=int, default=2,
+                        help="Dimensione finestra in battute (default: 2)")
+    parser.add_argument("--hop_bars", type=int, default=1,
+                        help="Passo tra finestre in battute (default: 1)")
     args = parser.parse_args()
 
     chunks_dir = Path(args.chunks_dir)
