@@ -443,6 +443,9 @@ def process_composer(
         window_size: float = 1.0,
         hop_size: float = 0.5,
         aggregation: str = 'mean',
+        bars_mode: bool = False,
+        window_bars: int = 2,
+        hop_bars: int = 1,
 ) -> dict:
     folder = chunks_dir / composer
     if not folder.exists():
@@ -469,6 +472,9 @@ def process_composer(
             window_size = window_size,
             hop_size = hop_size,
             aggregation = aggregation,
+            bars_mode = bars_mode,
+            window_bars = window_bars,
+            hop_bars = hop_bars,
         )
         if feat is not None:
             pch, pctm, ih, nlh, nltm = feat
@@ -485,7 +491,7 @@ def process_composer(
     #Tronca tutti i vettori alla stessa lunghezza (il minimo)
     if aggregation == 'concat':
         for key in ['pch', 'pctm']:
-            if lists[key] and args.aggregation == 'concat':
+            if lists[key]:
                 min_len = min(len(x) for x in lists[key])
                 lists[key] = [x[:min_len] for x in lists[key]]
 
@@ -527,18 +533,24 @@ if __name__ == "__main__":
             window_size=args.window_size,
             hop_size=args.hop_size,
             aggregation = args.aggregation,
+            bars_mode=args.bars_mode,
+            window_bars=args.window_bars,
+            hop_bars=args.hop_bars,
         )
 
         WINDOWED_FEATURES = ['pch', 'pctm']
 
         for feat_name, data in feat_dict.items():
-            if args.windowed and feat_name in WINDOWED_FEATURES:
+            if args.windowed and args.aggregation == 'concat':
                 if args.bars_mode:
-                    suffix = f"_b{args.window_bars}_h{args.hop_bars}{'_concat' if args.aggregation == 'concat' else ''}"
+                    suffix = f"_b{args.window_bars}_h{args.hop_bars}_concat"
                 else:
-                    suffix = f"_w{args.window_size}_h{args.hop_size}{'_concat' if args.aggregation == 'concat' else ''}"
-            else:
-                suffix = ""
+                    suffix = f"_w{args.window_size}_h{args.hop_size}_concat"
+
+                min_len_pch = min(np.load(output_dir / f"{c}_pch{suffix}.npy").shape[1]
+                                  for c in args.composers)
+                min_len_pctm = min(np.load(output_dir / f"{c}_pctm{suffix}.npy").shape[1]
+                                   for c in args.composers)
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
             np.save(out_path, data)
             print(f" Salvato: {out_path} shape={data.shape}")
