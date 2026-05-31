@@ -18,14 +18,23 @@ import umap
 # Colori: reali in grigio, generati in colori vivaci
 REAL_COLOR = '#888888'
 GEN_COLORS = {
-    'maestro_huang':   '#E91E63',  # rosa
-    'maestro_plasser': '#4CAF50',  # verde
-    'maestro_nc':      '#2196F3',  # blu
+    'maestro_huang':      '#E91E63',
+    'maestro_plasser':    '#4CAF50',
+    'maestro_nc':         '#2196F3',
+    'scarlatti_nc':       '#2196F3',
+    'scarlatti_plasser':  '#4CAF50',
+    'pop909_nc':          '#2196F3',
+    'pop909_plasser':     '#4CAF50',
 }
+
 GEN_LABELS = {
-    'maestro_huang':   'Huang (generato)',
-    'maestro_plasser': 'Plasser (generato)',
-    'maestro_nc':      'NC (generato)',
+    'maestro_huang':      'Huang (generato)',
+    'maestro_plasser':    'Plasser (generato)',
+    'maestro_nc':         'NC (generato)',
+    'scarlatti_nc':       'NC (generato)',
+    'scarlatti_plasser':  'Plasser (generato)',
+    'pop909_nc':          'NC (generato)',
+    'pop909_plasser':     'Plasser (generato)',
 }
 
 
@@ -119,7 +128,7 @@ if __name__ == "__main__":
     ax.scatter(
         embedding[mask, 0], embedding[mask, 1],
         s=8, alpha=0.3, color=REAL_COLOR,
-        label=f'MAESTRO reale ({mask.sum()})',
+        label=f'Reale ({mask.sum()})',
         zorder=1,
     )
 
