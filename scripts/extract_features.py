@@ -541,23 +541,24 @@ if __name__ == "__main__":
         WINDOWED_FEATURES = ['pch', 'pctm']
 
         for feat_name, data in feat_dict.items():
-            if args.windowed and args.aggregation == 'concat':
+            if args.windowed and feat_name in WINDOWED_FEATURES:
                 if args.bars_mode:
-                    suffix = f"_b{args.window_bars}_h{args.hop_bars}_concat"
+                    suffix = f"_b{args.window_bars}_h{args.hop_bars}{'_concat' if args.aggregation == 'concat' else ''}"
                 else:
-                    suffix = f"_w{args.window_size}_h{args.hop_size}_concat"
-
-                min_len_pch = min(np.load(output_dir / f"{c}_pch{suffix}.npy").shape[1]
-                                  for c in args.composers)
-                min_len_pctm = min(np.load(output_dir / f"{c}_pctm{suffix}.npy").shape[1]
-                                   for c in args.composers)
+                    suffix = f"_w{args.window_size}_h{args.hop_size}{'_concat' if args.aggregation == 'concat' else ''}"
+            else:
+                suffix = ""
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
             np.save(out_path, data)
             print(f" Salvato: {out_path} shape={data.shape}")
 
     # Troncamento globale dopo aver estratto tutti i compositori
     if args.windowed and args.aggregation == 'concat':
-        suffix = f"_w{args.window_size}_h{args.hop_size}_concat"
+        if args.bars_mode:
+            suffix = f"_b{args.window_bars}_h{args.hop_bars}_concat"
+        else:
+            suffix = f"_w{args.window_size}_h{args.hop_size}_concat"
+
         min_len_pch = min(np.load(output_dir / f"{c}_pch{suffix}.npy").shape[1]
                           for c in args.composers)
         min_len_pctm = min(np.load(output_dir / f"{c}_pctm{suffix}.npy").shape[1]
