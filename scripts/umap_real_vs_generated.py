@@ -128,7 +128,7 @@ if __name__ == "__main__":
     ax.scatter(
         embedding[mask, 0], embedding[mask, 1],
         s=8, alpha=0.3, color=REAL_COLOR,
-        label=f'Reale ({mask.sum()})',
+        label=f'{dataset_name} reale ({mask.sum()})',
         zorder=1,
     )
 
@@ -144,8 +144,9 @@ if __name__ == "__main__":
             zorder=2,
         )
 
+    dataset_name = args.real_composers[0].replace('_real', '').upper()
     ax.set_title(
-        f"UMAP — Reale vs Generato\n"
+        f"UMAP — Reale vs Generato ({dataset_name})\n"
         f"feature: {args.feature_type}, {args.n_per_group} campioni/gruppo",
         fontsize=12
     )
