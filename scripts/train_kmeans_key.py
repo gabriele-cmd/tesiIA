@@ -62,6 +62,7 @@ def plot_centroids(kmeans: KMeans, labels: np.ndarray, output_path: str, compose
 
     for i, centroid in enumerate(kmeans.cluster_centers_):
         n = np.sum(labels == i)
+        key, r = identify_key(centroid)
         axes[i].bar(NOTE_NAMES, centroid, color='steelblue')
         axes[i].set_title(f'Cluster {i} — {key} maj  (r={r:.2f}, n={n})', fontsize=8)
         axes[i].set_ylim(0, 0.65)
