@@ -30,6 +30,19 @@ import matplotlib.pyplot as plt
 NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F',
               'F#', 'G', 'G#', 'A', 'A#', 'B']
 
+KS_MAJOR = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09,
+                     2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+
+#Identificazione tonalità del cluster secondo KS
+def identify_key(centroid: np.ndarray) -> tuple:
+    best_r, best_key = -np.inf, 0
+    for k in range(12):
+        profile = np.roll(KS_MAJOR, k)
+        r = np.corrcoef(centroid, profile)[0, 1]
+        if r > best_r:
+            best_r, best_key = r, k
+    return NOTE_NAMES[best_key], best_r
+
 def load_pch(features_dir: str, composers: list) -> np.ndarray:
     arrays = []
     for composer in composers:
@@ -50,7 +63,7 @@ def plot_centroids(kmeans: KMeans, labels: np.ndarray, output_path: str, compose
     for i, centroid in enumerate(kmeans.cluster_centers_):
         n = np.sum(labels == i)
         axes[i].bar(NOTE_NAMES, centroid, color='steelblue')
-        axes[i].set_title(f'Cluster {i}  (n={n})', fontsize=9)
+        axes[i].set_title(f'Cluster {i} — {key} maj  (r={r:.2f}, n={n})', fontsize=8)
         axes[i].set_ylim(0, 0.65)
         axes[i].tick_params(labelsize=7)
 
@@ -135,7 +148,8 @@ if __name__ == "__main__":
     )
 
     #Statistiche cluster
-    print("\nDistribuzione cluster:")
-    for i in range(args.n_clusters):
+    print('\nCluster -> tonalità (KS):')
+    for i, centroid in enumerate(kmeans.cluster_centers_):
+        key, r = identify_key(centroid)
         n = np.sum(kmeans.labels_ == i)
-        print(f"  Cluster {i:2d}: {n:5d} chunk")
+        print(f'  Cluster {i:2d}: {key:3s} maj  r={r:.3f}  n={n}')
