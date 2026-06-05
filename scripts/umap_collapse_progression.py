@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     # Produce un grafico per ogni K
     n_k = len(K_VALUES)
-    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
     axes = axes.flatten()
 
     for idx_k, K in enumerate(K_VALUES):
