@@ -201,7 +201,7 @@ if __name__ == "__main__":
               f"normalizer={normalizer}, "
               f"compositori training={model_data['composers']}")
 
-    #Estrae feature per ogni compositore
+    #Estrae la nuova feature per ogni compositore
     suffix = f"_kitm_{args.method}"
 
     for composer in args.composers:
