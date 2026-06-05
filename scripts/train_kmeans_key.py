@@ -95,6 +95,8 @@ if __name__ == "__main__":
                         default="models/kmeans_key.pkl")
     parser.add_argument("--plot_path", type=str,
                         default="results/kmeans_centroids_final.png")
+    parser.add_argument("--n_samples", type=int, default=None,
+                        help="Subsample casuale prima del training (default: usa tutto)")
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
@@ -118,6 +120,13 @@ if __name__ == "__main__":
         print("  Normalizzazione L2 applicata")
     else:
         pch_fit = pch_all
+
+    #Subsampling
+    if args.n_samples is not None and args.n_samples < len(pch_fit):
+        rng = np.random.default_rng(args.random_state)
+        idx = rng.choice(len(pch_fit), args.n_samples, replace=False)
+        pch_fit = pch_fit[idx]
+        print(f"  Subsample: {len(pch_fit)} chunk")
 
     #Addestra K-means
     print(f"\nTraining K-means (n_init={args.n_init})...")
