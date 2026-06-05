@@ -43,7 +43,7 @@ def dirichlet_collapse(composers_data: dict, K: float, n_points: int, seed: int 
     composer_labels = []
     for i, composer in enumerate(composers):
         data = composers_data[composer]
-        n = n_per_composer[composer]
+        n = n_per_composer[i]
         if n > 0:
             idx = rng.choice(n_per_composer, n, replace=True)
             samples.append(data[idx])
