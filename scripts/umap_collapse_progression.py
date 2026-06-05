@@ -45,7 +45,7 @@ def dirichlet_collapse(composers_data: dict, K: float, n_points: int, seed: int 
         data = composers_data[composer]
         n = n_per_composer[i]
         if n > 0:
-            idx = rng.choice(n_per_composer, n, replace=True)
+            idx = rng.choice(len(data), n, replace=True)
             samples.append(data[idx])
             composer_labels.extend([composer] * n)
 
@@ -101,10 +101,18 @@ if __name__ == "__main__":
         verbose=False,
     )
 
-    # Produce un grafico per ogni K
-    n_k = len(K_VALUES)
+    print("Fitting UMAP su P...")
+    emb_P = reducer.fit_transform(P)
+
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
     axes = axes.flatten()
+
+    for idx_k, K in enumerate(K_VALUES):
+        Q, q_labels, weights = dirichlet_collapse(
+            composers_data, K, len(P), seed=args.umap_seed + idx_k * 17
+        )
+
+        emb_Q = reducer.transform(Q)
 
     for idx_k, K in enumerate(K_VALUES):
         collapse = 1.0 - 1.0 / (1.0 + np.exp(-2.0 * (K - 1.0)))
@@ -117,14 +125,6 @@ if __name__ == "__main__":
         Q, q_labels, weights = dirichlet_collapse(
             composers_data, K, len(P), seed=args.umap_seed + idx_k * 17
         )
-
-        # Combina P e Q per UMAP
-        X_combined = np.vstack([P, Q])
-        embedding = reducer.fit_transform(X_combined)
-
-        emb_P = embedding[:len(P)]
-        emb_Q = embedding[len(P):]
-
         ax = axes[idx_k]
 
         # Plotta P in grigio
