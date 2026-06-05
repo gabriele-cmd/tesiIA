@@ -1,0 +1,141 @@
+"""
+Addestra K-means sui PCH dei compositori specificati e salva il modello.
+Il modello viene usato poi per assegnare ogni chunk a un cluster tonale.
+
+Default: Mozart, k=12, L2
+python scripts/train_kmeans_key.py \
+    --composers mozart \
+    --n_clusters 12 \
+    --output_path models/kmeans_key.pkl \
+    --plot_path results/kmeans_centroids_final.png
+
+Per altre combinazioni basta cambiare --composers:
+--composers mozart bach beethoven
+--composers mozart chopin debussy bach beethoven
+"""
+
+import argparse
+import numpy as np
+import pickle
+import os
+from pathlib import Path
+
+from IPython.core.pylabtools import figsize
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import normalize
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F',
+              'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+def load_pch(features_dir: str, composers: list) -> np.ndarray:
+    arrays = []
+    for composer in composers:
+        path = Path(features_dir) / f"{composer}_pch.npy"
+        if not path.exists():
+            raise FileNotFoundError(f"File non trovato: {path}")
+        arr = np.load(path).astype(np.float32)
+        arrays.append(arr)
+        print(f"  {composer}: {len(arr)} frammenti")
+    return np.vstack(arrays)
+
+def plot_centroids(kmeans: KMeans, labels: np.ndarray, output_path: str, composers: list, n_clusters: int):
+    cols = 4
+    rows = (n_clusters + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 3))
+    axes = axes.flatten()
+
+    for i, centroid in enumerate(kmeans.cluster_centers_):
+        n = np.sum(labels == i)
+        axes[i].bar(NOTE_NAMES, centroid, color='steelblue')
+        axes[i].set_title(f'Cluster {i}  (n={n})', fontsize=9)
+        axes[i].set_ylim(0, 0.65)
+        axes[i].tick_params(labelsize=7)
+
+    #Nasconde assi extra
+    for j in range(n_clusters, len(axes)):
+        axes[j].set_visible(False)
+
+    composers_str = "+".join(composers)
+    fig.suptitle(
+        f'K-means k={n_clusters}, normalizzazione L2\n'
+        f'Compositori: {composers_str}',
+        fontsize=12
+    )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=130, bbox_inches='tight')
+    plt.close()
+    print(f"Grafico salvato: {output_path}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--features_dir", type=str, default="data/features")
+    parser.add_argument("--composers", nargs="+", default=["mozart"])
+    parser.add_argument("--n_clusters", type=int, default=12)
+    parser.add_argument("--normalizer", type=str, default="l2",
+                        choices=["l2", "none"])
+    parser.add_argument("--n_init", type=int, default=20)
+    parser.add_argument("--random_state", type=int, default=42)
+    parser.add_argument("--output_path", type=str,
+                        default="models/kmeans_key.pkl")
+    parser.add_argument("--plot_path", type=str,
+                        default="results/kmeans_centroids_final.png")
+    args = parser.parse_args()
+
+    os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
+    os.makedirs(os.path.dirname(args.plot_path), exist_ok=True)
+
+    print("=" * 50)
+    print("Training K-means per key detection")
+    print(f"  Compositori:  {args.composers}")
+    print(f"  n_clusters:   {args.n_clusters}")
+    print(f"  normalizer:   {args.normalizer}")
+    print("=" * 50)
+
+    #Carica PCH
+    print("\nCaricamento PCH:")
+    pch_all = load_pch(args.features_dir, args.composers)
+    print(f"  Totale: {len(pch_all)} chunk")
+
+    #Normalizza
+    if args.normalizer == 'l2':
+        pch_fit = normalize(pch_all, norm='l2')
+        print("  Normalizzazione L2 applicata")
+    else:
+        pch_fit = pch_all
+
+    #Addestra K-means
+    print(f"\nTraining K-means (n_init={args.n_init})...")
+    kmeans = KMeans(
+        n_clusters=args.n_clusters,
+        random_state=args.random_state,
+        n_init=args.n_init,
+    )
+    kmeans.fit(pch_fit)
+    print(f"  Inertia: {kmeans.inertia_:.4f}")
+
+    #Salva modello + metadati
+    model_data = {
+        'kmeans': kmeans,
+        'normalizer': args.normalizer,
+        'n_clusters': args.n_clusters,
+        'composers': args.composers,
+        'random_state': args.random_state,
+    }
+    with open(args.output_path, 'wb') as f:
+        pickle.dump(model_data, f)
+    print(f"\nModello salvato: {args.output_path}")
+
+    #Plotta centroidi
+    plot_centroids(
+        kmeans, kmeans.labels_,
+        args.plot_path, args.composers, args.n_clusters
+    )
+
+    #Statistiche cluster
+    print("\nDistribuzione cluster:")
+    for i in range(args.n_clusters):
+        n = np.sum(kmeans.labels_ == i)
+        print(f"  Cluster {i:2d}: {n:5d} chunk")
