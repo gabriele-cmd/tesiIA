@@ -90,54 +90,66 @@ def experiment(
         P_raw: np.ndarray,
         Q_raw: np.ndarray,
         normalizer: str = 'standard',
-        n_trials: int = 10,
         n_samples: int = 2000,
+        n_outer: int = 5,
+        n_inner: int = 10,
         baseline: bool = False,
         seed: int = 0,
 ) -> dict:
-    mmd2_trials = []
-    oa_trials = []
-
     # Allinea le dimensioni
     min_dim = min(P_raw.shape[1], Q_raw.shape[1])
     P_raw = P_raw[:, :min_dim]
     Q_raw = Q_raw[:, :min_dim]
     print(f"  Dimensione allineata: {min_dim}")
 
-    for trial in range(n_trials):
-        trial_seed = seed + trial * 100
-        rng = np.random.default_rng(trial_seed)
+    outer_oa_means   = []
+    outer_mmd2_means = []
 
-        #Subsample per trial
+    for outer in range(n_outer):
+        outer_seed = seed + outer * 1000
+        rng_outer  = np.random.default_rng(outer_seed)
+
         if baseline:
-            idx = rng.permutation(len(P_raw))
-            P = P_raw[idx[:n_samples]]
-            Q = P_raw[idx[n_samples:n_samples * 2]]
+            idx_all = rng_outer.permutation(len(P_raw))
+            Q_fixed = P_raw[idx_all[n_samples:n_samples*2]]
+            P_pool  = P_raw[idx_all[:n_samples*4]]
         else:
-            idx_p = rng.choice(len(P_raw), n_samples, replace=False)
-            idx_q = rng.choice(len(Q_raw), n_samples, replace=False)
-            P = P_raw[idx_p]
-            Q = Q_raw[idx_q]
+            n_q     = min(n_samples, len(Q_raw))
+            idx_q   = rng_outer.choice(len(Q_raw), n_q, replace=False)
+            Q_fixed = Q_raw[idx_q]
+            P_pool  = P_raw
 
-        #Normalizza
-        P_norm, Q_norm = normalize(P, Q, normalizer)
+        inner_oa   = []
+        inner_mmd2 = []
 
-        #MMD
-        X = torch.from_numpy(P_norm.astype(np.float32))
-        Y = torch.from_numpy(Q_norm.astype(np.float32))
-        X, Y = move_to_device(X, Y, device=device)
-        mmd2_val, _ = compute_mmd2(X, Y, device=device)
-        mmd2_trials.append(float(mmd2_val))
+        for inner in range(n_inner):
+            inner_seed = outer_seed + inner * 100
+            rng_inner  = np.random.default_rng(inner_seed)
 
-        #OA
-        oa = overlap_area_kde(P_norm, Q_norm, seed=trial_seed)
-        oa_trials.append(float(oa))
+            n_p   = min(n_samples, len(P_pool))
+            idx_p = rng_inner.choice(len(P_pool), n_p, replace=False)
+            P     = P_pool[idx_p]
+            Q     = Q_fixed[:n_p]
+
+            P_norm, Q_norm = normalize(P, Q, normalizer)
+
+            X = torch.from_numpy(P_norm.astype(np.float32))
+            Y = torch.from_numpy(Q_norm.astype(np.float32))
+            X, Y = move_to_device(X, Y, device=device)
+            mmd2_val, _ = compute_mmd2(X, Y, device=device)
+            inner_mmd2.append(float(mmd2_val))
+
+            oa = overlap_area_kde(P_norm, Q_norm, seed=inner_seed)
+            inner_oa.append(float(oa))
+
+        outer_oa_means.append(float(np.mean(inner_oa)))
+        outer_mmd2_means.append(float(np.mean(inner_mmd2)))
 
     return {
-        'mmd2': float(np.mean(mmd2_trials)),
-        'mmd2_std': float(np.std(mmd2_trials)),
-        'oa': float(np.mean(oa_trials)),
-        'oa_std': float(np.std(oa_trials)),
+        'mmd2':     float(np.mean(outer_mmd2_means)),
+        'mmd2_std': float(np.std(outer_mmd2_means)),
+        'oa':       float(np.mean(outer_oa_means)),
+        'oa_std':   float(np.std(outer_oa_means)),
     }
 
 #Main
@@ -152,7 +164,8 @@ if __name__ == "__main__":
     parser.add_argument("--normalizer", type=str, default="standard",
                         choices=["minmax", "standard"])
     parser.add_argument("--n_samples", type=int, default=2000)
-    parser.add_argument("--n_trials", type=int, default=10)
+    parser.add_argument("--n_outer", type=int, default=5)
+    parser.add_argument("--n_inner", type=int, default=10)
     parser.add_argument("--output_dir", type=str,
                         default="results/real_vs_generated")
     parser.add_argument("--baseline", action="store_true",
@@ -192,14 +205,15 @@ if __name__ == "__main__":
             args.n_samples,
         )
 
-    print(f"\nEsperimento ({args.n_trials} trial)...")
+    print(f"\nEsperimento (outer={args.n_outer}, inner={args.n_inner})...")
     results = experiment(
         device=device,
         P_raw=P,
         Q_raw=Q,
         normalizer=args.normalizer,
-        n_trials=args.n_trials,
         n_samples=args.n_samples,
+        n_outer=args.n_outer,
+        n_inner=args.n_inner,
         baseline=args.baseline,
     )
 
