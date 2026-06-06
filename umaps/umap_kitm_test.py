@@ -148,10 +148,15 @@ if __name__ == "__main__":
     rng = np.random.default_rng(42)
 
     for composer in args.composers:
-        pch_all  = np.load(features_dir / f"{composer}_pch.npy").astype(np.float32)
+        pch_all = np.load(features_dir / f"{composer}_pch.npy").astype(np.float32)
         kitm_all = np.load(features_dir / f"{composer}_kitm_kmeans.npy").astype(np.float32)
-        n = min(args.n_per_composer, len(pch_all))
-        idx = rng.choice(len(pch_all), n, replace=False)
+
+        n_available = min(len(pch_all), len(kitm_all))
+        pch_all = pch_all[:n_available]
+        kitm_all = kitm_all[:n_available]
+
+        n = min(args.n_per_composer, n_available)
+        idx = rng.choice(n_available, n, replace=False)
 
         pch_list.append(pch_all[idx])
         kitm_hard_list.append(kitm_all[idx])
@@ -174,7 +179,7 @@ if __name__ == "__main__":
 
     print(f"  Intervalli estratti: {len(interval_data)}")
 
-    # ── TEST 1: Normalizzazioni diverse su KITM hard ──────────────
+    #TEST 1: Normalizzazioni diverse su KITM hard
     print("\nTest normalizzazioni su KITM hard...")
 
     for norm_name, X in [
@@ -189,7 +194,7 @@ if __name__ == "__main__":
             os.path.join(args.output_dir, f"umap_kitm_hard_{norm_name}.png")
         )
 
-    # ── TEST 2: Soft assignment K-means ───────────────────────────
+    #TEST 2: Soft assignment K-means
     print("\nCalcolo soft KITM K-means...")
     kitm_soft_km = soft_kitm_kmeans(pch_data, interval_data, kmeans, normalizer)
     print(f"  Shape: {kitm_soft_km.shape}, non-zero medio per vettore: "
@@ -205,7 +210,7 @@ if __name__ == "__main__":
             os.path.join(args.output_dir, f"umap_kitm_soft_kmeans_{norm_name}.png")
         )
 
-    # ── TEST 3: Soft assignment KS ────────────────────────────────
+    #TEST 3: Soft assignment KS
     print("\nCalcolo soft KITM KS...")
     kitm_soft_ks = soft_kitm_ks(pch_data, interval_data)
     print(f"  Shape: {kitm_soft_ks.shape}, non-zero medio per vettore: "
