@@ -5,14 +5,15 @@ Estrae le feature Pitch Class Histogram (PCH) e Pitch Class Transition Matrix (P
 Esecuzione:
     python3 scripts/extract_features.py --chunks_dir data/chunks --output data/features
 """
+
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse
 import numpy as np
 import pretty_midi
 from pathlib import Path
 from tqdm import tqdm
 from utils import save_manifest
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 #12 Class Pitch
 N_PITCH_CLASSES = 12
