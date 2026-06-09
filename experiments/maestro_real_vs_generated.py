@@ -17,13 +17,12 @@ import numpy as np
 import torch
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
-from utils import overlap_area_kde
+from utils.utils_oa import overlap_area_kde
 
 #Caricamento feature reali e fa subsample
 def load_real(

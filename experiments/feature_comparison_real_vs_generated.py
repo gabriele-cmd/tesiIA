@@ -15,7 +15,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
-from utils import overlap_area_kde
+from utils.utils_oa import overlap_area_kde
 
 
 def load_features(features_dir: str, dataset: str, feature: str) -> np.ndarray:

@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
-from utils import overlap_area_kde
+from utils.utils_oa import overlap_area_kde
 
 #1. Setup Quadrato
 #4 gaussiane isotropiche sui vertici di un quadrato centrato nell'origine

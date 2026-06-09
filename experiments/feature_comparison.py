@@ -23,7 +23,7 @@ from pathlib import Path
 from itertools import combinations
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-from utils import overlap_area_kde
+from utils.utils_oa import overlap_area_kde
 
 #Feature vettoriali prese da Yang & Lerch
 VECTOR_FEATURES = ['pch', 'pctm', 'nlh', 'nltm']

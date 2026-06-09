@@ -23,7 +23,7 @@ from sklearn.mixture import GaussianMixture
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
-from utils import overlap_area_kde
+from utils.utils_oa import overlap_area_kde
 
 #Funzioni di densità
 def gaussian_pdf(x: np.ndarray, mean: np.ndarray, std: float) -> np.ndarray:

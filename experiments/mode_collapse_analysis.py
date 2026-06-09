@@ -29,8 +29,7 @@ from sklearn.datasets import load_breast_cancer
 
 from device import get_device, move_to_device
 from mmd import compute_mmd2
-from bandwidth import median_bandwidth
-from utils import overlap_area_kde
+from utils.utils_oa import overlap_area_kde
 
 #1. Fit della GMM base
 def fit_base_gmm(n_components: int = 3, seed: int = 0):
