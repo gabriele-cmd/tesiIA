@@ -9,9 +9,8 @@ import argparse
 import numpy as np
 import pretty_midi
 from pathlib import Path
-
-from numpy.f2py.crackfortran import skipemptyends
 from tqdm import tqdm
+from utils import save_manifest
 
 #12 Class Pitch
 N_PITCH_CLASSES = 12
@@ -555,10 +554,9 @@ if __name__ == "__main__":
             print(f" Salvato: {out_path} shape={data.shape}")
 
         # Salva manifest — stesso per tutte le feature di questo compositore
-        manifest_path = output_dir / f"{composer}_manifest.txt"
-        with open(manifest_path, 'w') as f:
-            f.write('\n'.join(valid_paths))
-        print(f" Manifest: {manifest_path} ({len(valid_paths)} chunk)")
+        suffix_manifest = f"_w{args.window_size}_h{args.hop_size}_concat" \
+            if (args.windowed and args.aggregation == 'concat') else ""
+        save_manifest(output_dir, composer, suffix_manifest, valid_paths)
 
     # Troncamento globale dopo aver estratto tutti i compositori
     if args.windowed and args.aggregation == 'concat':

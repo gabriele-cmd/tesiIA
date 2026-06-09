@@ -40,6 +40,7 @@ import pretty_midi
 from pathlib import Path
 from sklearn.preprocessing import normalize
 from tqdm import tqdm
+from utils import save_manifest
 
 N_PITCH_CLASSES = 12
 N_INTERVALS     = 12
@@ -214,11 +215,7 @@ if __name__ == "__main__":
         np.save(out_path, features)
         print(f" Salvato: {out_path} shape={features.shape}")
 
-        np.save(out_path, features)
-        manifest_path = output_dir / f"{composer}{suffix}_manifest.txt"
-        with open(manifest_path, 'w') as f:
-            f.write('\n'.join(valid_paths))
-        print(f" Manifest: {manifest_path} ({len(valid_paths)} chunk)")
+        save_manifest(output_dir, composer, suffix, valid_paths)
 
     print("\n" + "=" * 55)
     print("Estrazione completata.")
