@@ -139,7 +139,7 @@ def compute_kit(midi_path: str, method: str,
 
 #Elaborazione di una cartella di frammenti
 def process_composer(chunks_dir: Path, composer: str, method: str,
-                     kmeans=None, normalizer: str = 'l2') -> np.ndarray:
+                     kmeans=None, normalizer: str = 'l2') -> tuple:
     folder = chunks_dir / composer
     if not folder.exists():
         raise FileNotFoundError(f"Cartella non trovata: {folder}")
@@ -152,16 +152,18 @@ def process_composer(chunks_dir: Path, composer: str, method: str,
 
     features = []
     skipped = 0
+    valid_paths = []
 
     for midi_path in tqdm(midi_files, desc=f"   KITM {composer}"):
         feat = compute_kit(str(midi_path), method, kmeans, normalizer)
         if feat is not None:
             features.append(feat)
+            valid_paths.append(str(midi_path))
         else:
             skipped += 1
 
     print(f"    -> {len(features)} chunk validi, {skipped} scartati")
-    return np.array(features, dtype=np.float32)
+    return np.array(features, dtype=np.float32), valid_paths
 
 #MAIN
 if __name__ == "__main__":
@@ -205,12 +207,18 @@ if __name__ == "__main__":
     suffix = f"_kitm_{args.method}"
 
     for composer in args.composers:
-        features = process_composer(
+        features, valid_paths = process_composer(
             chunks_dir, composer, args.method, kmeans, normalizer
         )
         out_path = output_dir / f"{composer}{suffix}.npy"
         np.save(out_path, features)
         print(f" Salvato: {out_path} shape={features.shape}")
+
+        np.save(out_path, features)
+        manifest_path = output_dir / f"{composer}{suffix}_manifest.txt"
+        with open(manifest_path, 'w') as f:
+            f.write('\n'.join(valid_paths))
+        print(f" Manifest: {manifest_path} ({len(valid_paths)} chunk)")
 
     print("\n" + "=" * 55)
     print("Estrazione completata.")

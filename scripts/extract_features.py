@@ -446,7 +446,7 @@ def process_composer(
         bars_mode: bool = False,
         window_bars: int = 2,
         hop_bars: int = 1,
-) -> dict:
+) -> tuple:
     folder = chunks_dir / composer
     if not folder.exists():
         raise FileNotFoundError(f"Cartella non trovata: {folder}")
@@ -464,6 +464,7 @@ def process_composer(
         'nltm': [],
     }
     skipped = 0
+    valid_paths = []
 
     for midi_path in tqdm(midi_files, desc=f"   Estrazione {composer}"):
         feat = extract_features(
@@ -483,6 +484,7 @@ def process_composer(
             lists['interval_histogram'].append(ih)
             lists['nlh'].append(nlh)
             lists['nltm'].append(nltm)
+            valid_paths.append(str(midi_path))
         else:
             skipped += 1
     n_valid = len(lists['pch'])
@@ -498,7 +500,7 @@ def process_composer(
     lengths = [len(x) for x in lists['pch']]
     unique_lengths = set(lengths)
     print(f"Lunghezze PCH: {unique_lengths}")
-    return {k: np.array(v, dtype=np.float32) for k, v in lists.items()}
+    return {k: np.array(v, dtype=np.float32) for k, v in lists.items()}, valid_paths
 
 
 if __name__ == "__main__":
@@ -527,7 +529,7 @@ if __name__ == "__main__":
     print("=" * 55)
 
     for composer in args.composers:
-        feat_dict = process_composer(
+        feat_dict, valid_paths = process_composer(
             chunks_dir, composer,
             windowed=args.windowed,
             window_size=args.window_size,
@@ -551,6 +553,12 @@ if __name__ == "__main__":
             out_path = output_dir / f"{composer}_{feat_name}{suffix}.npy"
             np.save(out_path, data)
             print(f" Salvato: {out_path} shape={data.shape}")
+
+        # Salva manifest — stesso per tutte le feature di questo compositore
+        manifest_path = output_dir / f"{composer}_manifest.txt"
+        with open(manifest_path, 'w') as f:
+            f.write('\n'.join(valid_paths))
+        print(f" Manifest: {manifest_path} ({len(valid_paths)} chunk)")
 
     # Troncamento globale dopo aver estratto tutti i compositori
     if args.windowed and args.aggregation == 'concat':
