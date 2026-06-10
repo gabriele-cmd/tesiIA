@@ -9,6 +9,9 @@ discriminative. Se i cluster si sovrappongono, le feature non distinguono corret
 Esecuzione:
     python scripts/umap_check.py --features_dir data/features
 """
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import argparse
 import numpy as np
 import matplotlib
