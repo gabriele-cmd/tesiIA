@@ -28,12 +28,18 @@ from sklearn.preprocessing import StandardScaler
 from utils import attach_interactive_picker, load_manifest
 
 COMPOSER_COLORS = {
-    'mozart':    '#2196F3',
-    'chopin':    '#E91E63',
-    'debussy':   '#4CAF50',
-    'bach':      '#FF9800',
-    'beethoven': '#9C27B0',
+    'mozart':       '#2196F3',
+    'chopin':       '#E91E63',
+    'debussy':      '#4CAF50',
+    'bach':         '#FF9800',
+    'beethoven':    '#9C27B0',
+    'schubert':     '#00BCD4',
+    'liszt':        '#FF5722',
+    'rachmaninoff': '#795548',
+    'schumann':     '#607D8B',
+    'haydn':        '#8BC34A',
 }
+
 N_MAX = 2000 #massimo di campioni per compositore (rispecchia il compositore con meno brani chunks disponibili, Mozart con 2055
 
 #Carica le feature di tutti i compositori e costruisce il dataset con le etichette
@@ -108,8 +114,6 @@ def plot_umap(
         plt.savefig(output_path, dpi=130, bbox_inches='tight')
         plt.close()
         print(f"Grafico salvato: {output_path}")
-    plt.close()
-    print(f"Grafico salvato: {output_path}")
 
 #Esegue la riduzione dimensionale UMAP da d a 2 dimensioni
 def run_umap(
@@ -159,9 +163,15 @@ if __name__ == "__main__":
         all_paths = []
         for composer in composers:
             raw = load_manifest(manifest_dir, composer, f'_{args.feature_type}')
-            if raw:
+            if raw is None:
+                #fallback: manifest senza prefisso tipo feature
+                suffix_parts = args.feature_type.split('_', 1)
+                if len(suffix_parts) > 1:
+                    raw = load_manifest(manifest_dir, composer, f'_{suffix_parts[1]}')
+            if raw is not None:
                 all_paths.extend([raw[i] for i in idx_per_composer[composer]])
             else:
+                print(f"  ATTENZIONE: manifest non trovato per {composer}")
                 all_paths.extend([''] * len(idx_per_composer[composer]))
 
         print(f"  Dataset totale: {X.shape}")
