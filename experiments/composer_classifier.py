@@ -316,6 +316,8 @@ def plot_dendrogram(output_dir: Path, feature_type: str,
         leaf_font_size  = 12,
     )
 
+    ax.set_ylim(bottom=0.8)
+
     ax.set_title(
         f'Albero stilistico — {feature_type.upper()}\n'
         f'Clustering gerarchico (UPGMA) su similarità da classificatore\n'
